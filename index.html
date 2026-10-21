@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WhatsApp Drive Vault</title>
+    <link rel="manifest" href="manifest.json">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #efeae2;
+            background-image: radial-gradient(#d1d7db 1px, transparent 1px);
+            background-size: 16px 16px;
+        }
+    </style>
+</head>
+<body class="text-[#111b21] h-screen flex flex-col justify-between font-sans select-none">
+
+    <!-- Header -->
+    <header class="bg-[#008069] text-white p-3 flex items-center justify-between shadow-md z-10">
+        <div class="flex items-center space-x-2">
+            <div class="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center font-bold text-white text-base">📁</div>
+            <div>
+                <h1 class="font-semibold text-xs leading-tight">Drive Vault</h1>
+                <p id="currentAssetDisplay" class="text-[10px] text-emerald-100 font-mono">Asset: None</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-1">
+            <select id="assetSelect" class="bg-emerald-800 text-white text-xs px-2 py-1.5 rounded-lg border border-emerald-600 focus:outline-none max-w-[120px]">
+                <option value="" disabled selected>Select Asset</option>
+            </select>
+            <button id="openNewAssetModal" class="bg-white text-[#008069] font-bold w-8 h-8 rounded-lg flex items-center justify-center text-lg shadow hover:bg-emerald-50 active:scale-95">➕</button>
+        </div>
+    </header>
+
+    <!-- Modal for New Asset Code -->
+    <div id="newAssetModal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl p-5 w-full max-w-xs shadow-2xl space-y-4">
+            <h3 class="font-bold text-gray-800 text-base">➕ Naya Asset Code Banayein</h3>
+            <input type="text" id="modalInputCode" placeholder="Asset Code (e.g. 193A0056)..." class="w-full bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#008069]">
+            <div class="flex space-x-2 pt-2">
+                <button id="modalCancelBtn" class="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg text-sm font-medium">Radd</button>
+                <button id="modalSaveBtn" class="flex-1 bg-[#008069] text-white py-2 rounded-lg text-sm font-medium">Banaein</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chat Area -->
+    <main id="chat-container" class="flex-1 overflow-y-auto p-4 flex flex-col space-y-3">
+        <div class="self-start bg-white text-[#111b21] p-3 rounded-xl rounded-tl-none max-w-[85%] text-sm shadow-sm border border-gray-200">
+            👋 Hello! Upar ➕ button dabakar naya <b>Asset Code</b> banayein ya dropdown se select karein.
+        </div>
+    </main>
+
+    <!-- Attachment Menu -->
+    <div id="attachMenu" class="hidden bg-white border border-gray-200 p-4 rounded-2xl mx-4 mb-2 grid grid-cols-4 gap-4 text-center shadow-2xl transition-all duration-200">
+        <label class="flex flex-col items-center cursor-pointer group">
+            <div class="w-12 h-12 rounded-full bg-rose-500 flex items-center justify-center text-xl text-white shadow-lg">📷</div>
+            <span class="text-xs text-gray-600 mt-1">Camera</span>
+            <input type="file" id="cameraInput" accept="image/*" capture="environment" class="hidden">
+        </label>
+        <label class="flex flex-col items-center cursor-pointer group">
+            <div class="w-12 h-12 rounded-full bg-purple-500 flex items-center justify-center text-xl text-white shadow-lg">🖼️</div>
+            <span class="text-xs text-gray-600 mt-1">Photos</span>
+            <input type="file" id="photoInput" accept="image/*" class="hidden">
+        </label>
+        <label class="flex flex-col items-center cursor-pointer group">
+            <div class="w-12 h-12 rounded-full bg-pink-500 flex items-center justify-center text-xl text-white shadow-lg">🎥</div>
+            <span class="text-xs text-gray-600 mt-1">Video</span>
+            <input type="file" id="videoInput" accept="video/*" class="hidden">
+        </label>
+        <label class="flex flex-col items-center cursor-pointer group">
+            <div class="w-12 h-12 rounded-full bg-indigo-500 flex items-center justify-center text-xl text-white shadow-lg">📄</div>
+            <span class="text-xs text-gray-600 mt-1">Document</span>
+            <input type="file" id="fileInput" accept="*/*" class="hidden">
+        </label>
+    </div>
+
+    <!-- Footer Bar -->
+    <footer class="bg-[#f0f2f5] p-2 px-3 flex items-center space-x-2 z-10 border-t border-gray-200">
+        <button id="toggleAttach" class="text-gray-500 hover:text-gray-700 p-2 text-2xl">📎</button>
+        <input type="text" id="commentInput" placeholder="Type a message / comment..." class="flex-1 bg-white text-[#111b21] placeholder-gray-400 px-4 py-2.5 rounded-lg focus:outline-none text-sm border border-gray-300 shadow-inner">
+        <button id="sendBtn" class="bg-[#008069] text-white w-10 h-10 rounded-full flex items-center justify-center hover:bg-[#016956] text-lg shadow-md">➤</button>
+    </footer>
+
+    <script>
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbwyTg3ejnUFC4Tei7trpTUf76WAJ2eKZtMYF_bU_DMjTZndTZApm9jNsV8UbPM79uz7nw/exec";
+
+        let selectedFile = null;
+        let currentAssetCode = localStorage.getItem('user_asset_code') || '';
+
+        const assetSelect = document.getElementById('assetSelect');
+        const currentAssetDisplay = document.getElementById('currentAssetDisplay');
+        const newAssetModal = document.getElementById('newAssetModal');
+        const modalInputCode = document.getElementById('modalInputCode');
+        const chatContainer = document.getElementById('chat-container');
+
+        window.addEventListener('load', () => {
+            loadAssetFolders();
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('sw.js');
+            }
+        });
+
+        function loadAssetFolders() {
+            fetch(GAS_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: "getFolders" })
+            })
+            .then(res => res.json())
+            .then(res => {
+                assetSelect.innerHTML = '<option value="" disabled>Select Asset</option>';
+                if (res.success && res.folders.length > 0) {
+                    res.folders.forEach(code => {
+                        const opt = document.createElement('option');
+                        opt.value = code;
+                        opt.textContent = code;
+                        assetSelect.appendChild(opt);
+                    });
+                }
+                if (currentAssetCode && Array.from(assetSelect.options).some(o => o.value === currentAssetCode)) {
+                    assetSelect.value = currentAssetCode;
+                    currentAssetDisplay.textContent = "Asset: " + currentAssetCode;
+                }
+            }).catch(() => {});
+        }
+
+        assetSelect.addEventListener('change', (e) => {
+            currentAssetCode = e.target.value;
+            localStorage.setItem('user_asset_code', currentAssetCode);
+            currentAssetDisplay.textContent = "Asset: " + currentAssetCode;
+            appendMessage(null, `📌 Selected Asset Code: <b>${currentAssetCode}</b>`, false);
+        });
+
+        document.getElementById('openNewAssetModal').addEventListener('click', () => {
+            newAssetModal.classList.remove('hidden');
+            modalInputCode.value = '';
+            modalInputCode.focus();
+        });
+
+        document.getElementById('modalCancelBtn').addEventListener('click', () => {
+            newAssetModal.classList.add('hidden');
+        });
+
+        document.getElementById('modalSaveBtn').addEventListener('click', () => {
+            let newCode = modalInputCode.value.trim();
+            if (newCode) {
+                currentAssetCode = newCode.toUpperCase().replace(/[^a-zA-Z0-9_-]/g, '_');
+                localStorage.setItem('user_asset_code', currentAssetCode);
+                
+                const opt = document.createElement('option');
+                opt.value = currentAssetCode;
+                opt.textContent = currentAssetCode;
+                assetSelect.appendChild(opt);
+                assetSelect.value = currentAssetCode;
+
+                currentAssetDisplay.textContent = "Asset: " + currentAssetCode;
+                newAssetModal.classList.add('hidden');
+                appendMessage(null, `✨ Naya Asset Code ban gaya: <b>${currentAssetCode}</b>`, false);
+            } else {
+                alert("Kripya code enter karein!");
+            }
+        });
+
+        document.getElementById('toggleAttach').addEventListener('click', () => {
+            document.getElementById('attachMenu').classList.toggle('hidden');
+        });
+
+        function bindFile(id, label) {
+            document.getElementById(id).addEventListener('change', (e) => {
+                const f = e.target.files[0];
+                if (f) {
+                    selectedFile = f;
+                    document.getElementById('attachMenu').classList.add('hidden');
+                    appendMessage(f.type.startsWith('image/') ? URL.createObjectURL(f) : null, `${label}: ${f.name}`, true, f.type);
+                }
+            });
+        }
+        bindFile('cameraInput', 'Camera');
+        bindFile('photoInput', 'Photo');
+        bindFile('videoInput', 'Video');
+        bindFile('fileInput', 'Document');
+
+        document.getElementById('sendBtn').addEventListener('click', () => {
+            const comment = document.getElementById('commentInput').value.trim();
+            if (!selectedFile && !comment) return;
+            if (!currentAssetCode) {
+                alert("Pehle Asset Code select karein ya ➕ dabakar naya banayein!");
+                return;
+            }
+
+            appendMessage(null, comment || 'Uploading...', false);
+            const com = comment;
+            const file = selectedFile;
+            document.getElementById('commentInput').value = '';
+            selectedFile = null;
+
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    sendToGAS(e.target.result.split(',')[1], file.name, file.type, com);
+                };
+                reader.readAsDataURL(file);
+            } else {
+                sendToGAS('', '', '', com);
+            }
+        });
+
+        function sendToGAS(base64Data, fileName, mimeType, comment) {
+            fetch(GAS_URL, {
+                method: 'POST',
+                body: JSON.stringify({
+                    action: "upload",
+                    assetCode: currentAssetCode,
+                    base64Data: base64Data,
+                    fileName: fileName,
+                    mimeType: mimeType,
+                    comment: comment
+                })
+            })
+            .then(res => res.json())
+            .then(res => {
+                if (res.success) {
+                    appendMessage(null, '✅ Saved in Drive Folder: <b>' + res.folderName + '</b>', false);
+                } else {
+                    appendMessage(null, '❌ Error: ' + res.error, false);
+                }
+            })
+            .catch(err => appendMessage(null, '❌ Failed: ' + err, false));
+        }
+
+        function appendMessage(src, text, isUser, type='') {
+            const div = document.createElement('div');
+            div.className = `max-w-[80%] p-2.5 rounded-xl text-sm flex flex-col space-y-2 ${isUser ? 'self-end bg-[#d9fdd3]' : 'self-start bg-white border border-gray-200'}`;
+            if (src && type.startsWith('image/')) div.innerHTML += `<img src="${src}" class="rounded-lg max-h-52 object-cover">`;
+            if (text) div.innerHTML += `<span>${text}</span>`;
+            chatContainer.appendChild(div);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+    </script>
+</body>
+</html>
