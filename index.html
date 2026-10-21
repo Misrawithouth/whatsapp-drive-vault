@@ -16,8 +16,8 @@
 </head>
 <body class="text-[#111b21] h-screen flex flex-col justify-between font-sans select-none">
 
-    <!-- App Header -->
-    <header class="bg-[#008069] text-white p-3 flex items-center justify-between shadow-md z-10">
+    <!-- App Header (Fixed Sticky Top) -->
+    <header class="bg-[#008069] text-white p-3 flex items-center justify-between shadow-md sticky top-0 z-50">
         <div class="flex items-center space-x-2">
             <div class="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center font-bold text-white text-base">📊</div>
             <div>
@@ -89,7 +89,7 @@
         const GAS_URL = "https://script.google.com/macros/s/AKfycbwyTg3ejnUFC4Tei7trpTUf76WAJ2eKZtMYF_bU_DMjTZndTZApm9jNsV8UbPM79uz7nw/exec";
 
         let selectedFile = null;
-        let currentAssetCode = ""; // Shuruwaat me koi asset code select nahi hoga
+        let currentAssetCode = "";
 
         const assetSelect = document.getElementById('assetSelect');
         const currentAssetDisplay = document.getElementById('currentAssetDisplay');
@@ -190,7 +190,6 @@
             document.getElementById('commentInput').value = '';
             selectedFile = null;
 
-            // Add placeholder message for progress tracking
             const msgId = appendMessage(file && file.type.startsWith('image/') ? URL.createObjectURL(file) : null, com || 'Preparing upload...', false);
 
             if (file) {
@@ -208,7 +207,7 @@
             }
         });
 
-        // Image Compression Function to prevent crashes
+        // Stronger Image Compression to avoid Network Error
         function compressAndUpload(file, comment, msgId) {
             const reader = new FileReader();
             reader.onload = function(e) {
@@ -217,8 +216,8 @@
                     const canvas = document.createElement('canvas');
                     let width = img.width;
                     let height = img.height;
-                    const MAX_WIDTH = 1000;
-                    const MAX_HEIGHT = 1000;
+                    const MAX_WIDTH = 800;
+                    const MAX_HEIGHT = 800;
                     if (width > height) {
                         if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
                     } else {
@@ -228,7 +227,7 @@
                     canvas.height = height;
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, width, height);
-                    const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                    const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.6);
                     const base64Data = compressedDataUrl.split(',')[1];
                     sendWithXHR(base64Data, file.name, 'image/jpeg', comment, msgId);
                 };
@@ -237,7 +236,7 @@
             reader.readAsDataURL(file);
         }
 
-        // XHR Upload with Real-time Progress Percentage
+        // XHR Upload with Progress
         function sendWithXHR(base64Data, fileName, mimeType, comment, msgId) {
             const xhr = new XMLHttpRequest();
             xhr.open('POST', GAS_URL, true);
@@ -268,7 +267,7 @@
             };
 
             xhr.onerror = function() {
-                updateMessageText(msgId, `❌ Network error occurred.`);
+                updateMessageText(msgId, `❌ Network error occurred. Please check connection.`);
             };
 
             xhr.send(JSON.stringify({
