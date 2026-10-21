@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>WhatsApp Drive Vault</title>
+    <title>Data Collection</title>
     <link rel="manifest" href="manifest.json">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -16,15 +16,17 @@
 </head>
 <body class="text-[#111b21] h-screen flex flex-col justify-between font-sans select-none">
 
-    <!-- Header -->
+    <!-- App Header -->
     <header class="bg-[#008069] text-white p-3 flex items-center justify-between shadow-md z-10">
         <div class="flex items-center space-x-2">
-            <div class="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center font-bold text-white text-base">📁</div>
+            <div class="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center font-bold text-white text-base">📊</div>
             <div>
-                <h1 class="font-semibold text-xs leading-tight">Drive Vault</h1>
-                <p id="currentAssetDisplay" class="text-[10px] text-emerald-100 font-mono">Asset: None</p>
+                <h1 class="font-semibold text-xs leading-tight">Data Collection</h1>
+                <p id="currentAssetDisplay" class="text-[10px] text-emerald-100 font-mono">Asset: None Selected</p>
             </div>
         </div>
+        
+        <!-- Asset Selector & Plus Button -->
         <div class="flex items-center space-x-1">
             <select id="assetSelect" class="bg-emerald-800 text-white text-xs px-2 py-1.5 rounded-lg border border-emerald-600 focus:outline-none max-w-[120px]">
                 <option value="" disabled selected>Select Asset</option>
@@ -33,14 +35,14 @@
         </div>
     </header>
 
-    <!-- Modal for New Asset Code -->
+    <!-- Custom Modal for New Asset Code Creation -->
     <div id="newAssetModal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl p-5 w-full max-w-xs shadow-2xl space-y-4">
-            <h3 class="font-bold text-gray-800 text-base">➕ Naya Asset Code Banayein</h3>
-            <input type="text" id="modalInputCode" placeholder="Asset Code (e.g. 193A0056)..." class="w-full bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#008069]">
+            <h3 class="font-bold text-gray-800 text-base">Create New Asset Code</h3>
+            <input type="text" id="modalInputCode" placeholder="Enter Asset Code..." class="w-full bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#008069]">
             <div class="flex space-x-2 pt-2">
-                <button id="modalCancelBtn" class="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg text-sm font-medium">Radd</button>
-                <button id="modalSaveBtn" class="flex-1 bg-[#008069] text-white py-2 rounded-lg text-sm font-medium">Banaein</button>
+                <button id="modalCancelBtn" class="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg text-sm font-medium">Cancel</button>
+                <button id="modalSaveBtn" class="flex-1 bg-[#008069] text-white py-2 rounded-lg text-sm font-medium">Create</button>
             </div>
         </div>
     </div>
@@ -48,11 +50,11 @@
     <!-- Chat Area -->
     <main id="chat-container" class="flex-1 overflow-y-auto p-4 flex flex-col space-y-3">
         <div class="self-start bg-white text-[#111b21] p-3 rounded-xl rounded-tl-none max-w-[85%] text-sm shadow-sm border border-gray-200">
-            👋 Hello! Upar ➕ button dabakar naya <b>Asset Code</b> banayein ya dropdown se select karein.
+            👋 Welcome! Please select an <b>Asset Code</b> from the dropdown above or click <b>➕</b> to create a new one before uploading data.
         </div>
     </main>
 
-    <!-- Attachment Menu -->
+    <!-- Attachment Options Popup -->
     <div id="attachMenu" class="hidden bg-white border border-gray-200 p-4 rounded-2xl mx-4 mb-2 grid grid-cols-4 gap-4 text-center shadow-2xl transition-all duration-200">
         <label class="flex flex-col items-center cursor-pointer group">
             <div class="w-12 h-12 rounded-full bg-rose-500 flex items-center justify-center text-xl text-white shadow-lg">📷</div>
@@ -76,10 +78,10 @@
         </label>
     </div>
 
-    <!-- Footer Bar -->
+    <!-- Bottom Action Bar -->
     <footer class="bg-[#f0f2f5] p-2 px-3 flex items-center space-x-2 z-10 border-t border-gray-200">
         <button id="toggleAttach" class="text-gray-500 hover:text-gray-700 p-2 text-2xl">📎</button>
-        <input type="text" id="commentInput" placeholder="Type a message / comment..." class="flex-1 bg-white text-[#111b21] placeholder-gray-400 px-4 py-2.5 rounded-lg focus:outline-none text-sm border border-gray-300 shadow-inner">
+        <input type="text" id="commentInput" placeholder="Type a message or comment..." class="flex-1 bg-white text-[#111b21] placeholder-gray-400 px-4 py-2.5 rounded-lg focus:outline-none text-sm border border-gray-300 shadow-inner">
         <button id="sendBtn" class="bg-[#008069] text-white w-10 h-10 rounded-full flex items-center justify-center hover:bg-[#016956] text-lg shadow-md">➤</button>
     </footer>
 
@@ -87,7 +89,7 @@
         const GAS_URL = "https://script.google.com/macros/s/AKfycbwyTg3ejnUFC4Tei7trpTUf76WAJ2eKZtMYF_bU_DMjTZndTZApm9jNsV8UbPM79uz7nw/exec";
 
         let selectedFile = null;
-        let currentAssetCode = localStorage.getItem('user_asset_code') || '';
+        let currentAssetCode = ""; // Shuruwaat me koi asset code select nahi hoga
 
         const assetSelect = document.getElementById('assetSelect');
         const currentAssetDisplay = document.getElementById('currentAssetDisplay');
@@ -109,7 +111,7 @@
             })
             .then(res => res.json())
             .then(res => {
-                assetSelect.innerHTML = '<option value="" disabled>Select Asset</option>';
+                assetSelect.innerHTML = '<option value="" disabled selected>Select Asset</option>';
                 if (res.success && res.folders.length > 0) {
                     res.folders.forEach(code => {
                         const opt = document.createElement('option');
@@ -118,16 +120,11 @@
                         assetSelect.appendChild(opt);
                     });
                 }
-                if (currentAssetCode && Array.from(assetSelect.options).some(o => o.value === currentAssetCode)) {
-                    assetSelect.value = currentAssetCode;
-                    currentAssetDisplay.textContent = "Asset: " + currentAssetCode;
-                }
             }).catch(() => {});
         }
 
         assetSelect.addEventListener('change', (e) => {
             currentAssetCode = e.target.value;
-            localStorage.setItem('user_asset_code', currentAssetCode);
             currentAssetDisplay.textContent = "Asset: " + currentAssetCode;
             appendMessage(null, `📌 Selected Asset Code: <b>${currentAssetCode}</b>`, false);
         });
@@ -146,7 +143,6 @@
             let newCode = modalInputCode.value.trim();
             if (newCode) {
                 currentAssetCode = newCode.toUpperCase().replace(/[^a-zA-Z0-9_-]/g, '_');
-                localStorage.setItem('user_asset_code', currentAssetCode);
                 
                 const opt = document.createElement('option');
                 opt.value = currentAssetCode;
@@ -156,9 +152,9 @@
 
                 currentAssetDisplay.textContent = "Asset: " + currentAssetCode;
                 newAssetModal.classList.add('hidden');
-                appendMessage(null, `✨ Naya Asset Code ban gaya: <b>${currentAssetCode}</b>`, false);
+                appendMessage(null, `✨ New Asset Code created: <b>${currentAssetCode}</b>`, false);
             } else {
-                alert("Kripya code enter karein!");
+                alert("Please enter a valid asset code!");
             }
         });
 
@@ -185,7 +181,125 @@
             const comment = document.getElementById('commentInput').value.trim();
             if (!selectedFile && !comment) return;
             if (!currentAssetCode) {
-                alert("Pehle Asset Code select karein ya ➕ dabakar naya banayein!");
+                alert("Please select an Asset Code first or create a new one using ➕!");
+                return;
+            }
+
+            const com = comment;
+            const file = selectedFile;
+            document.getElementById('commentInput').value = '';
+            selectedFile = null;
+
+            // Add placeholder message for progress tracking
+            const msgId = appendMessage(file && file.type.startsWith('image/') ? URL.createObjectURL(file) : null, com || 'Preparing upload...', false);
+
+            if (file) {
+                if (file.type.startsWith('image/')) {
+                    compressAndUpload(file, com, msgId);
+                } else {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        sendWithXHR(e.target.result.split(',')[1], file.name, file.type, com, msgId);
+                    };
+                    reader.readAsDataURL(file);
+                }
+            } else {
+                sendWithXHR('', '', '', com, msgId);
+            }
+        });
+
+        // Image Compression Function to prevent crashes
+        function compressAndUpload(file, comment, msgId) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+                    const MAX_WIDTH = 1000;
+                    const MAX_HEIGHT = 1000;
+                    if (width > height) {
+                        if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+                    } else {
+                        if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
+                    }
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                    const base64Data = compressedDataUrl.split(',')[1];
+                    sendWithXHR(base64Data, file.name, 'image/jpeg', comment, msgId);
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // XHR Upload with Real-time Progress Percentage
+        function sendWithXHR(base64Data, fileName, mimeType, comment, msgId) {
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', GAS_URL, true);
+            xhr.setRequestHeader('Content-Type', 'text/plain;charset=utf-8');
+
+            xhr.upload.onprogress = function(e) {
+                if (e.lengthComputable) {
+                    const percentComplete = Math.round((e.loaded / e.total) * 100);
+                    updateMessageText(msgId, `Uploading... ${percentComplete}%`);
+                }
+            };
+
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    try {
+                        const res = JSON.parse(xhr.responseText);
+                        if (res.success) {
+                            updateMessageText(msgId, `✅ Uploaded successfully to folder: <b>${res.folderName}</b>${comment ? '<br>💬 ' + comment : ''}`);
+                        } else {
+                            updateMessageText(msgId, `❌ Error: ${res.error}`);
+                        }
+                    } catch (err) {
+                        updateMessageText(msgId, `❌ Error: Invalid server response.`);
+                    }
+                } else {
+                    updateMessageText(msgId, `❌ Server error: ${xhr.status}`);
+                }
+            };
+
+            xhr.onerror = function() {
+                updateMessageText(msgId, `❌ Network error occurred.`);
+            };
+
+            xhr.send(JSON.stringify({
+                action: "upload",
+                assetCode: currentAssetCode,
+                base64Data: base64Data,
+                fileName: fileName,
+                mimeType: mimeType,
+                comment: comment
+            }));
+        }
+
+        function appendMessage(src, text, isUser, type='') {
+            const div = document.createElement('div');
+            div.className = `max-w-[80%] p-2.5 rounded-xl text-sm flex flex-col space-y-2 ${isUser ? 'self-end bg-[#d9fdd3]' : 'self-start bg-white border border-gray-200'}`;
+            if (src) div.innerHTML += `<img src="${src}" class="rounded-lg max-h-52 object-cover">`;
+            div.innerHTML += `<span class="msg-text">${text}</span>`;
+            chatContainer.appendChild(div);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            return div;
+        }
+
+        function updateMessageText(div, newText) {
+            const span = div.querySelector('.msg-text');
+            if (span) span.innerHTML = newText;
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+    </script>
+</body>
+</html>
+select karein ya ➕ dabakar naya banayein!");
                 return;
             }
 
