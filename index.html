@@ -207,7 +207,7 @@
             }
         });
 
-        // Stronger Image Compression to avoid Network Error
+        // Optimized Compression (1000px & 0.7 quality for sharp text clarity)
         function compressAndUpload(file, comment, msgId) {
             const reader = new FileReader();
             reader.onload = function(e) {
@@ -216,8 +216,8 @@
                     const canvas = document.createElement('canvas');
                     let width = img.width;
                     let height = img.height;
-                    const MAX_WIDTH = 800;
-                    const MAX_HEIGHT = 800;
+                    const MAX_WIDTH = 1000;
+                    const MAX_HEIGHT = 1000;
                     if (width > height) {
                         if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
                     } else {
@@ -227,7 +227,7 @@
                     canvas.height = height;
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, width, height);
-                    const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.6);
+                    const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
                     const base64Data = compressedDataUrl.split(',')[1];
                     sendWithXHR(base64Data, file.name, 'image/jpeg', comment, msgId);
                 };
@@ -236,7 +236,7 @@
             reader.readAsDataURL(file);
         }
 
-        // XHR Upload with Progress
+        // XHR Upload with Live Percentage Progress
         function sendWithXHR(base64Data, fileName, mimeType, comment, msgId) {
             const xhr = new XMLHttpRequest();
             xhr.open('POST', GAS_URL, true);
