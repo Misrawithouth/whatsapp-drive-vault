@@ -2,378 +2,228 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Data Collection & AI Assistant</title>
-    <link rel="manifest" href="manifest.json">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Collection & AI</title>
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tesseract.js for Local Browser OCR -->
+    <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
     <style>
         body {
             background-color: #efeae2;
-            background-image: radial-gradient(#d1d7db 1px, transparent 1px);
-            background-size: 16px 16px;
-        }
-        /* Custom Styling for HTML Tables in Chat */
-        .msg-text table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 8px;
-            margin-bottom: 8px;
-            font-size: 12px;
-            background-color: #ffffff;
-            border-radius: 6px;
-            overflow: hidden;
-        }
-        .msg-text th, .msg-text td {
-            border: 1px solid #008069;
-            padding: 6px 10px;
-            text-align: left;
-        }
-        .msg-text th {
-            background-color: #008069;
-            color: #ffffff;
-            font-weight: bold;
-        }
-        .msg-text tr:nth-child(even) {
-            background-color: #f8fafc;
+            background-image: url("https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png");
         }
     </style>
 </head>
-<body class="text-[#111b21] h-screen flex flex-col justify-between font-sans select-none">
+<body class="h-screen flex flex-col justify-between">
 
-    <!-- App Header -->
-    <header class="bg-[#008069] text-white p-3 flex items-center justify-between shadow-md sticky top-0 z-50">
-        <div class="flex items-center space-x-2">
-            <div class="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center font-bold text-white text-base">🤖</div>
+    <!-- Header -->
+    <header class="bg-[#005c4b] text-white p-3 flex justify-between items-center shadow-md">
+        <div class="flex items-center space-x-3">
+            <div class="bg-gray-300 text-black rounded-full p-2 font-bold">🤖</div>
             <div>
-                <h1 class="font-semibold text-xs leading-tight">Data Collection & AI</h1>
-                <p id="currentAssetDisplay" class="text-[10px] text-emerald-100 font-mono">General Chat Mode (Gemini)</p>
+                <h1 class="font-bold text-base">Data Collection & AI</h1>
+                <p class="text-xs text-green-200" id="currentAssetDisplay">Asset: Select Asset</p>
             </div>
         </div>
-        
-        <div class="flex items-center space-x-1">
-            <select id="assetSelect" class="bg-emerald-800 text-white text-xs px-2 py-1.5 rounded-lg border border-emerald-600 focus:outline-none max-w-[120px]">
-                <option value="" selected>General Chat</option>
+        <div class="flex items-center space-x-2">
+            <select id="assetDropdown" class="bg-[#007b65] text-white text-sm px-2 py-1 rounded border-none focus:outline-none" onchange="updateAsset()">
+                <option value="">Select Asset</option>
             </select>
-            <button id="openNewAssetModal" class="bg-white text-[#008069] font-bold w-8 h-8 rounded-lg flex items-center justify-center text-lg shadow hover:bg-emerald-50 active:scale-95">➕</button>
+            <button onclick="createNewAsset()" class="bg-[#007b65] hover:bg-[#004d40] text-white font-bold px-3 py-1 rounded text-lg">+</button>
         </div>
     </header>
 
-    <!-- Modal for New Asset Code -->
-    <div id="newAssetModal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl p-5 w-full max-w-xs shadow-2xl space-y-4">
-            <h3 class="font-bold text-gray-800 text-base">Create New Asset Code</h3>
-            <input type="text" id="modalInputCode" placeholder="Enter Asset Code..." class="w-full bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#008069]">
-            <div class="flex space-x-2 pt-2">
-                <button id="modalCancelBtn" class="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg text-sm font-medium">Cancel</button>
-                <button id="modalSaveBtn" class="flex-1 bg-[#008069] text-white py-2 rounded-lg text-sm font-medium">Create</button>
+    <!-- Chat Area -->
+    <div id="chatContainer" class="flex-1 overflow-y-auto p-4 space-y-3">
+        <div class="flex justify-start">
+            <div class="bg-white text-black p-3 rounded-lg shadow max-w-xs text-sm">
+                <p>Namaste! Logsheet ki photo bhejein aur table format mein data praapt karein.</p>
             </div>
         </div>
     </div>
 
-    <!-- Chat Container -->
-    <main id="chat-container" class="flex-1 overflow-y-auto p-4 flex flex-col space-y-3">
-        <div class="self-start bg-white text-[#111b21] p-3 rounded-xl rounded-tl-none max-w-[85%] text-sm shadow-sm border border-gray-200">
-            👋 Welcome! Asset select karein aur data table format mein praapt karein.
-        </div>
-    </main>
+    <!-- Loading Indicator -->
+    <div id="loadingIndicator" class="hidden text-center py-1 bg-white/80 text-xs font-semibold text-gray-700">
+        Processing image locally via Tesseract OCR...
+    </div>
 
-    <!-- Media Preview Drawer -->
-    <div id="mediaPreviewModal" class="hidden fixed inset-x-0 bottom-14 bg-white border-t border-gray-300 p-3 shadow-2xl z-40 flex flex-col space-y-2 mx-2 rounded-2xl">
-        <div class="flex items-center justify-between border-b pb-1">
-            <span class="text-xs font-bold text-[#008069]">📎 File Preview & Caption</span>
-            <button id="cancelPreview" class="text-gray-500 font-bold text-base px-2">✕</button>
-        </div>
-        <div class="flex items-center space-x-3">
-            <img id="previewImg" class="w-16 h-16 object-cover rounded-lg border border-gray-200" src="" />
-            <div id="previewFileName" class="text-xs text-gray-600 font-mono truncate flex-1"></div>
-        </div>
-        <input type="text" id="captionInput" placeholder="Add a caption..." class="w-full bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#008069]">
-        <button id="confirmSendBtn" class="bg-[#008069] text-white py-2.5 rounded-lg text-sm font-semibold shadow-md flex items-center justify-center space-x-2">
-            <span>Send to Asset Folder</span>
-            <span>➤</span>
+    <!-- Input Footer -->
+    <footer class="bg-[#f0f2f5] p-3 flex items-center space-x-2">
+        <input type="file" id="fileInput" accept="image/*" class="hidden" onchange="handleImageSelection(event)">
+        <button onclick="document.getElementById('fileInput').click()" class="bg-gray-200 hover:bg-gray-300 p-2 rounded-full text-gray-700">
+            📎
         </button>
-    </div>
-
-    <iframe name="hidden_iframe" id="hidden_iframe" class="hidden"></iframe>
-
-    <div id="attachMenu" class="hidden bg-white border border-gray-200 p-4 rounded-2xl mx-4 mb-2 grid grid-cols-4 gap-4 text-center shadow-2xl">
-        <label class="flex flex-col items-center cursor-pointer">
-            <div class="w-12 h-12 rounded-full bg-rose-500 flex items-center justify-center text-xl text-white shadow-lg">📷</div>
-            <span class="text-xs text-gray-600 mt-1">Camera</span>
-            <input type="file" id="cameraInput" accept="image/*" capture="environment" class="hidden">
-        </label>
-        <label class="flex flex-col items-center cursor-pointer">
-            <div class="w-12 h-12 rounded-full bg-purple-500 flex items-center justify-center text-xl text-white shadow-lg">🖼️</div>
-            <span class="text-xs text-gray-600 mt-1">Photos</span>
-            <input type="file" id="photoInput" accept="image/*" class="hidden">
-        </label>
-        <label class="flex flex-col items-center cursor-pointer">
-            <div class="w-12 h-12 rounded-full bg-pink-500 flex items-center justify-center text-xl text-white shadow-lg">🎥</div>
-            <span class="text-xs text-gray-600 mt-1">Video</span>
-            <input type="file" id="videoInput" accept="video/*" class="hidden">
-        </label>
-        <label class="flex flex-col items-center cursor-pointer">
-            <div class="w-12 h-12 rounded-full bg-indigo-500 flex items-center justify-center text-xl text-white shadow-lg">📄</div>
-            <span class="text-xs text-gray-600 mt-1">Document</span>
-            <input type="file" id="fileInput" accept="*/*" class="hidden">
-        </label>
-    </div>
-
-    <!-- Bottom Footer -->
-    <footer class="bg-[#f0f2f5] p-2 px-3 flex items-center space-x-2 z-10 border-t border-gray-200">
-        <button id="toggleAttach" class="text-gray-500 p-2 text-2xl">📎</button>
-        <input type="text" id="commentInput" placeholder="Ask AI or type a prompt..." class="flex-1 bg-white text-[#111b21] px-4 py-2.5 rounded-lg focus:outline-none text-sm border border-gray-300">
-        <button id="sendBtn" class="bg-[#008069] text-white w-10 h-10 rounded-full flex items-center justify-center text-lg shadow-md">➤</button>
+        <input type="text" id="userInput" placeholder="Ask AI or type a prompt..." class="flex-1 bg-white border border-gray-300 rounded-full px-4 py-2 text-sm focus:outline-none">
+        <button onclick="sendMessage()" class="bg-[#00a884] hover:bg-[#008f6f] text-white p-2 rounded-full">
+            ➤
+        </button>
     </footer>
 
     <script>
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbwyTg3ejnUFC4Tei7trpTUf76WAJ2eKZtMYF_bU_DMjTZndTZApm9jNsV8UbPM79uz7nw/exec";
+        const WEB_APP_URL = "YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE"; // Yahan apna deployed Web App URL daalein
+        let selectedAsset = "";
+        let lastUploadedImageSrc = "";
 
-        let currentAssetCode = "";
-        let pendingFile = null;
+        window.onload = function() {
+            fetchFolders();
+        }
 
-        const assetSelect = document.getElementById('assetSelect');
-        const currentAssetDisplay = document.getElementById('currentAssetDisplay');
-        const newAssetModal = document.getElementById('newAssetModal');
-        const modalInputCode = document.getElementById('modalInputCode');
-        const chatContainer = document.getElementById('chat-container');
-        const mediaPreviewModal = document.getElementById('mediaPreviewModal');
-        const previewImg = document.getElementById('previewImg');
-        const previewFileName = document.getElementById('previewFileName');
-        const captionInput = document.getElementById('captionInput');
+        function updateAsset() {
+            const dropdown = document.getElementById("assetDropdown");
+            selectedAsset = dropdown.value;
+            document.getElementById("currentAssetDisplay").innerText = "Asset: " + (selectedAsset || "None");
+        }
 
-        window.addEventListener('load', () => {
-            loadAssetFolders();
-        });
+        function createNewAsset() {
+            let newAsset = prompt("Enter new Asset Code / Name:");
+            if (newAsset) {
+                selectedAsset = newAsset.trim();
+                let dropdown = document.getElementById("assetDropdown");
+                let option = document.createElement("option");
+                option.value = selectedAsset;
+                option.text = selectedAsset;
+                dropdown.add(option);
+                dropdown.value = selectedAsset;
+                updateAsset();
+            }
+        }
 
-        function loadAssetFolders() {
-            fetch(GAS_URL, {
-                method: 'POST',
-                mode: 'cors',
-                body: JSON.stringify({ action: "getFolders" })
-            })
-            .then(res => res.json())
-            .then(res => {
-                assetSelect.innerHTML = '<option value="">General Chat</option>';
-                if (res.success && res.folders.length > 0) {
-                    res.folders.forEach(code => {
-                        const opt = document.createElement('option');
-                        opt.value = code;
-                        opt.textContent = code;
-                        assetSelect.appendChild(opt);
+        async function fetchFolders() {
+            try {
+                let response = await fetch(WEB_APP_URL, {
+                    method: "POST",
+                    body: JSON.stringify({ action: "getFolders" })
+                });
+                let result = await response.json();
+                if (result.success && result.folders) {
+                    let dropdown = document.getElementById("assetDropdown");
+                    result.folders.forEach(folder => {
+                        let option = document.createElement("option");
+                        option.value = folder;
+                        option.text = folder;
+                        dropdown.add(option);
                     });
                 }
-            }).catch(() => {});
-        }
-
-        assetSelect.addEventListener('change', (e) => {
-            currentAssetCode = e.target.value;
-            currentAssetDisplay.textContent = currentAssetCode ? "Asset: " + currentAssetCode : "General Chat Mode (Gemini)";
-        });
-
-        document.getElementById('openNewAssetModal').addEventListener('click', () => {
-            newAssetModal.classList.remove('hidden');
-            modalInputCode.value = '';
-        });
-
-        document.getElementById('modalCancelBtn').addEventListener('click', () => {
-            newAssetModal.classList.add('hidden');
-        });
-
-        document.getElementById('modalSaveBtn').addEventListener('click', () => {
-            let newCode = modalInputCode.value.trim();
-            if (newCode) {
-                currentAssetCode = newCode.toUpperCase().replace(/[^a-zA-Z0-9_-]/g, '_');
-                const opt = document.createElement('option');
-                opt.value = currentAssetCode;
-                opt.textContent = currentAssetCode;
-                assetSelect.appendChild(opt);
-                assetSelect.value = currentAssetCode;
-                currentAssetDisplay.textContent = "Asset: " + currentAssetCode;
-                newAssetModal.classList.add('hidden');
+            } catch (err) {
+                console.error("Error fetching folders:", err);
             }
-        });
-
-        document.getElementById('toggleAttach').addEventListener('click', () => {
-            document.getElementById('attachMenu').classList.toggle('hidden');
-        });
-
-        function bindFile(id, label) {
-            document.getElementById(id).addEventListener('change', (e) => {
-                const f = e.target.files[0];
-                if (f) {
-                    if (!currentAssetCode) {
-                        alert("Select Asset Code first!");
-                        return;
-                    }
-                    document.getElementById('attachMenu').classList.add('hidden');
-                    pendingFile = f;
-                    if (f.type.startsWith('image/')) {
-                        previewImg.src = URL.createObjectURL(f);
-                        previewImg.classList.remove('hidden');
-                    } else {
-                        previewImg.classList.add('hidden');
-                    }
-                    previewFileName.textContent = `${label}: ${f.name}`;
-                    captionInput.value = '';
-                    mediaPreviewModal.classList.remove('hidden');
-                    e.target.value = '';
-                }
-            });
         }
 
-        bindFile('cameraInput', 'Camera');
-        bindFile('photoInput', 'Photo');
-        bindFile('videoInput', 'Video');
-        bindFile('fileInput', 'Document');
+        function handleImageSelection(event) {
+            const file = event.target.files[0];
+            if (!file) return;
 
-        document.getElementById('cancelPreview').addEventListener('click', () => {
-            mediaPreviewModal.classList.add('hidden');
-            pendingFile = null;
-        });
+            if (!selectedAsset) {
+                alert("Pehle upar se Asset select karein ya naya banayein!");
+                return;
+            }
 
-        document.getElementById('confirmSendBtn').addEventListener('click', () => {
-            if (!pendingFile) return;
-            const f = pendingFile;
-            const caption = captionInput.value.trim();
-            mediaPreviewModal.classList.add('hidden');
-            pendingFile = null;
-
-            const previewUrl = f.type.startsWith('image/') ? URL.createObjectURL(f) : null;
-            const msgId = appendMessage(previewUrl, `Uploading...${caption ? '<br>💬 ' + caption : ''}`, true);
-
-            compressAndUpload(f, caption, msgId);
-        });
-
-        document.getElementById('sendBtn').addEventListener('click', () => {
-            const textQuery = document.getElementById('commentInput').value.trim();
-            if (!textQuery) return;
-            document.getElementById('commentInput').value = '';
-
-            appendMessage(null, textQuery, true);
-            const botMsgId = appendMessage(null, "🤖 Gemini processing...", false);
-
-            fetch(GAS_URL, {
-                method: 'POST',
-                mode: 'cors',
-                body: JSON.stringify({ 
-                    action: "geminiChat", 
-                    query: textQuery,
-                    assetCode: currentAssetCode 
-                })
-            })
-            .then(res => res.json())
-            .then(res => {
-                if (res.success) {
-                    updateMessageText(botMsgId, res.reply);
-                } else {
-                    updateMessageText(botMsgId, "❌ Error: " + res.error);
-                }
-            })
-            .catch(() => {
-                updateMessageText(botMsgId, "❌ Connection Error");
-            });
-        });
-
-        function compressAndUpload(file, comment, msgId) {
             const reader = new FileReader();
             reader.onload = function(e) {
-                const img = new Image();
-                img.onload = function() {
-                    const canvas = document.createElement('canvas');
-                    let width = img.width, height = img.height;
-                    if (width > 1000) { height *= 1000 / width; width = 1000; }
-                    canvas.width = width; canvas.height = height;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, width, height);
-                    const base64Data = canvas.toDataURL('image/jpeg', 0.7).split(',')[1];
-                    sendViaForm(base64Data, file.name, 'image/jpeg', comment, msgId);
-                };
-                img.src = e.target.result;
+                lastUploadedImageSrc = e.target.result;
+                appendMessage(e.target.result, 'image', 'user');
+                uploadToDrive(file, selectedAsset);
             };
             reader.readAsDataURL(file);
         }
 
-        function sendViaForm(base64Data, fileName, mimeType, comment, msgId) {
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = GAS_URL;
-            form.target = 'hidden_iframe';
+        async function uploadToDrive(file, assetCode) {
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                let base64Data = e.target.result.split(',')[1];
+                let payload = {
+                    action: "upload",
+                    assetCode: assetCode,
+                    fileName: file.name,
+                    mimeType: file.type,
+                    base64Data: base64Data
+                };
 
-            const payloadInput = document.createElement('input');
-            payloadInput.type = 'hidden';
-            payloadInput.name = 'postDataContent';
-            payloadInput.value = JSON.stringify({
-                action: "upload",
-                assetCode: currentAssetCode,
-                base64Data: base64Data,
-                fileName: fileName,
-                mimeType: mimeType,
-                comment: comment
-            });
-
-            form.appendChild(payloadInput);
-            document.body.appendChild(form);
-            form.submit();
-            form.remove();
-
-            setTimeout(() => {
-                updateMessageText(msgId, `✅ Uploaded to: <b>${currentAssetCode}</b>${comment ? '<br>💬 ' + comment : ''}`);
-            }, 1500);
-        }
-
-        function appendMessage(src, text, isUser) {
-            const div = document.createElement('div');
-            div.className = `max-w-[85%] p-2.5 rounded-xl text-sm flex flex-col space-y-2 ${isUser ? 'self-end bg-[#d9fdd3]' : 'self-start bg-white border border-gray-200'}`;
-            if (src) div.innerHTML += `<img src="${src}" class="rounded-lg max-h-52 object-cover">`;
-            div.innerHTML += `<span class="msg-text">${text}</span>`;
-            chatContainer.appendChild(div);
-            chatContainer.scrollTop = chatContainer.scrollHeight;
-            return div;
-        }
-
-        // Markdown-to-HTML Table Parser Fix
-        function parseMarkdownTables(text) {
-            const lines = text.split('\n');
-            let html = '';
-            let inTable = false;
-
-            for (let i = 0; i < lines.length; i++) {
-                let line = lines[i].trim();
-
-                // Detect Markdown Table Row
-                if (line.startsWith('|') && line.endsWith('|')) {
-                    if (line.includes('---')) continue; // Skip delimiter row
-
-                    const cells = line.split('|').slice(1, -1).map(c => c.trim());
-
-                    if (!inTable) {
-                        inTable = true;
-                        html += '<table>';
-                        html += '<tr>' + cells.map(c => `<th>${c}</th>`).join('') + '</tr>';
+                try {
+                    let response = await fetch(WEB_APP_URL, {
+                        method: "POST",
+                        body: JSON.stringify(payload)
+                    });
+                    let result = await response.json();
+                    if (result.success) {
+                        appendMessage(`✅ Uploaded to: ${assetCode}`, 'text', 'bot');
                     } else {
-                        html += '<tr>' + cells.map(c => `<td>${c}</td>`).join('') + '</tr>';
+                        appendMessage(`❌ Upload failed: ${result.error}`, 'text', 'bot');
                     }
-                } else {
-                    if (inTable) {
-                        html += '</table>';
-                        inTable = false;
-                    }
-                    html += line + '<br>';
+                } catch (err) {
+                    appendMessage(`❌ Upload Exception: ${err.toString()}`, 'text', 'bot');
                 }
-            }
-            if (inTable) html += '</table>';
-            return html;
+            };
+            reader.readAsDataURL(file);
         }
 
-        function updateMessageText(div, newText) {
-            const span = div.querySelector('.msg-text');
-            if (span) {
-                let formatted = parseMarkdownTables(newText)
-                    .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
-                span.innerHTML = formatted;
+        async function sendMessage() {
+            const input = document.getElementById("userInput");
+            const query = input.value.trim();
+            if (!query) return;
+
+            appendMessage(query, 'text', 'user');
+            input.value = "";
+
+            if (lastUploadedImageSrc && (query.toLowerCase().includes("table") || query.toLowerCase().includes("data") || query.toLowerCase().includes("ocr"))) {
+                document.getElementById("loadingIndicator").classList.remove("hidden");
+                try {
+                    const result = await Tesseract.recognize(lastUploadedImageSrc, 'eng');
+                    document.getElementById("loadingIndicator").classList.add("hidden");
+                    
+                    let tableHtml = formatTextToMarkdownTable(result.data.text);
+                    appendMessage(tableHtml, 'html', 'bot');
+                } catch (err) {
+                    document.getElementById("loadingIndicator").classList.add("hidden");
+                    appendMessage("Local OCR Error: " + err.toString(), 'text', 'bot');
+                }
+            } else {
+                appendMessage("Kripya pehle logsheet image upload karein aur table format ki maang karein.", 'text', 'bot');
             }
-            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function formatTextToMarkdownTable(rawText) {
+            let lines = rawText.split('\n').filter(line => line.trim() !== "");
+            let tableHtml = `<div class="overflow-x-auto"><table class="min-w-full border-collapse border border-gray-300 text-xs bg-white text-black">
+                <thead>
+                    <tr class="bg-gray-100">
+                        <th class="border border-gray-300 px-2 py-1 text-left">Line / Field</th>
+                        <th class="border border-gray-300 px-2 py-1 text-left">Extracted Value</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+            
+            lines.forEach((line, index) => {
+                tableHtml += `<tr>
+                    <td class="border border-gray-300 px-2 py-1 font-medium">Row ${index + 1}</td>
+                    <td class="border border-gray-300 px-2 py-1">${line}</td>
+                </tr>`;
+            });
+            
+            tableHtml += `</tbody></table></div>`;
+            return tableHtml;
+        }
+
+        function appendMessage(content, type, sender) {
+            const container = document.getElementById("chatContainer");
+            const msgDiv = document.createElement("div");
+            msgDiv.className = `flex ${sender === 'user' ? 'justify-end' : 'justify-start'}`;
+
+            const innerDiv = document.createElement("div");
+            innerDiv.className = `p-3 rounded-lg shadow max-w-xs sm:max-w-md text-sm ${sender === 'user' ? 'bg-[#d9fdd3] text-black' : 'bg-white text-black'}`;
+
+            if (type === 'image') {
+                innerDiv.innerHTML = `<img src="${content}" class="rounded max-h-48 object-cover">`;
+            } else if (type === 'html') {
+                innerDiv.innerHTML = content;
+            } else {
+                innerDiv.innerText = content;
+            }
+
+            msgDiv.appendChild(innerDiv);
+            container.appendChild(msgDiv);
+            container.scrollTop = container.scrollHeight;
         }
     </script>
 </body>
