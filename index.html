@@ -75,7 +75,6 @@
         let selectedAsset = "";
         let currentFile = null;
         let currentBase64 = null;
-        let captionText = "";
 
         window.onload = function() {
             fetchFolders();
@@ -155,17 +154,17 @@
         async function sendSelectedImage() {
             if (!currentFile || !currentBase64) return;
 
-            captionText = document.getElementById("modalCaptionInput").value.trim();
+            let captionText = document.getElementById("modalCaptionInput").value.trim();
             const fullDataUrl = document.getElementById("modalImagePreview").src;
             closeModal();
 
             const msgId = "msg_" + Date.now();
             appendMediaMessageWithProgress(fullDataUrl, captionText, msgId, 'user');
 
-            await uploadToDriveWithProgress(currentFile, selectedAsset, msgId);
+            await uploadToDriveWithProgress(currentFile, selectedAsset, msgId, captionText);
         }
 
-        async function uploadToDriveWithProgress(file, assetCode, msgId) {
+        async function uploadToDriveWithProgress(file, assetCode, msgId, captionText) {
             let progressBar = document.getElementById(`progress_${msgId}`);
             let progressText = document.getElementById(`progresstext_${msgId}`);
             let statusIcon = document.getElementById(`status_${msgId}`);
@@ -173,11 +172,11 @@
             let progress = 10;
             let interval = setInterval(() => {
                 if (progress < 90) {
-                    progress += 15;
+                    progress += 20;
                     if (progressBar) progressBar.style.width = progress + "%";
                     if (progressText) progressText.innerText = progress + "%";
                 }
-            }, 150);
+            }, 100);
 
             let payload = {
                 action: "upload",
@@ -202,10 +201,10 @@
                     let progressContainer = document.getElementById(`progress_container_${msgId}`);
                     if (progressContainer) progressContainer.style.display = 'none';
                     if (statusIcon) statusIcon.innerHTML = " ✓✓";
-                }, 400);
+                }, 300);
 
                 if (result.success) {
-                    triggerGeminiVisionAnalysis(currentBase64, file.type, captionText || "Please analyze this logsheet image and extract table data.");
+                    triggerGeminiVisionAnalysis(currentBase64, file.type, captionText || "Please analyze this image.");
                 } else {
                     alert("Upload failed: " + result.error);
                 }
