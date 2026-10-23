@@ -41,6 +41,23 @@
         </div>
     </div>
 
+    <!-- WhatsApp Style Media Preview Modal -->
+    <div id="mediaModal" class="hidden fixed inset-0 bg-black/80 z-50 flex flex-col justify-between p-4">
+        <div class="flex justify-between items-center text-white">
+            <span class="font-bold text-base">Preview Photo</span>
+            <button onclick="closeModal()" class="text-white text-2xl font-bold">&times;</button>
+        </div>
+        <div class="flex-1 flex items-center justify-center p-2">
+            <img id="modalImagePreview" class="max-h-[70vh] rounded-lg shadow-lg object-contain">
+        </div>
+        <div class="bg-[#202c33] p-3 rounded-lg flex items-center space-x-2">
+            <input type="text" id="modalCaptionInput" placeholder="Add a caption..." class="flex-1 bg-[#2a3942] text-white placeholder-gray-400 px-4 py-2 rounded-full text-sm focus:outline-none">
+            <button onclick="sendSelectedImage()" class="bg-[#00a884] hover:bg-[#008f6f] text-white p-3 rounded-full flex items-center justify-center shadow-lg">
+                ➤
+            </button>
+        </div>
+    </div>
+
     <!-- Loading Indicator -->
     <div id="loadingIndicator" class="hidden text-center py-1 bg-white/80 text-xs font-semibold text-gray-700">
         AI is thinking...
@@ -48,8 +65,8 @@
 
     <!-- Input Footer -->
     <footer class="bg-[#f0f2f5] p-3 flex items-center space-x-2">
-        <input type="file" id="fileInput" accept="image/*" multiple class="hidden" onchange="handleImageSelection(event)">
-        <button onclick="document.getElementById('fileInput').click()" class="bg-gray-200 hover:bg-gray-300 p-2 rounded-full text-gray-700" title="Select photos">
+        <input type="file" id="fileInput" accept="image/*" class="hidden" onchange="handleImageSelection(event)">
+        <button onclick="checkAssetAndTriggerUpload()" class="bg-gray-200 hover:bg-gray-300 p-2 rounded-full text-gray-700" title="Select photo">
             📎
         </button>
         <input type="text" id="userInput" placeholder="Type a message..." class="flex-1 bg-white border border-gray-300 rounded-full px-4 py-2 text-sm focus:outline-none" onkeypress="handleKeyPress(event)">
@@ -61,8 +78,8 @@
     <script>
         const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxOk2IuD_9YmJVzB7QV-8eMLr1V3ncgRvdjfXybSTB1rrPMH59tIHejRGEQ00B0R5AHZg/exec";
         let selectedAsset = "";
-        let pendingImageBase64 = null;
-        let pendingImageMime = "image/jpeg";
+        let currentFile = null;
+        let currentBase64 = null;
 
         window.onload = function() {
             fetchFolders();
@@ -109,54 +126,132 @@
             }
         }
 
-        function handleImageSelection(event) {
-            const files = event.target.files;
-            if (!files || files.length === 0) return;
-
+        function checkAssetAndTriggerUpload() {
             if (!selectedAsset) {
                 alert("Pehle upar se Asset select karein ya naya banayein!");
                 return;
             }
-
-            Array.from(files).forEach(file => {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    let fullDataUrl = e.target.result;
-                    pendingImageBase64 = fullDataUrl.split(',')[1];
-                    pendingImageMime = file.type;
-
-                    // Show image in chat as user message
-                    appendMessage(fullDataUrl, 'image', 'user');
-                    
-                    // Also upload to Drive silently in background
-                    uploadToDrive(file, selectedAsset);
-                };
-                reader.readAsDataURL(file);
-            });
+            document.getElementById('fileInput').click();
         }
 
-        async function uploadToDrive(file, assetCode) {
+        function handleImageSelection(event) {
+            const files = event.target.files;
+            if (!files || files.length === 0) return;
+
+            currentFile = files[0];
             const reader = new FileReader();
-            reader.onload = async function(e) {
-                let base64Data = e.target.result.split(',')[1];
+            reader.onload = function(e) {
+                currentBase64 = e.target.result.split(',')[1];
+                document.getElementById("modalImagePreview").src = e.target.result;
+                document.getElementById("modalCaptionInput").value = "";
+                document.getElementById("mediaModal").classList.remove("hidden");
+            };
+            reader.readAsDataURL(currentFile);
+            event.target.value = ""; // reset input
+        }
+
+        function closeModal() {
+            document.getElementById("mediaModal").classList.add("hidden");
+            currentFile = null;
+            currentBase64 = null;
+        }
+
+        async function sendSelectedImage() {
+            if (!currentFile || !currentBase64) return;
+
+            const caption = document.getElementById("modalCaptionInput").value.trim();
+            const fullDataUrl = document.getElementById("modalImagePreview").src;
+            closeModal();
+
+            // Append image with WhatsApp progress bar layout
+            const msgId = "msg_" + Date.now();
+            appendMediaMessageWithProgress(fullDataUrl, caption, msgId, 'user');
+
+            // Upload to Google Drive with simulated/real progress
+            await uploadToDriveWithProgress(currentFile, selectedAsset, msgId);
+        }
+
+        async function uploadToDriveWithProgress(file, assetCode, msgId) {
+            let progressBar = document.getElementById(`progress_${msgId}`);
+            let progressText = document.getElementById(`progresstext_${msgId}`);
+            let statusIcon = document.getElementById(`status_${msgId}`);
+
+            // Simulate smooth progress animation while uploading
+            let progress = 10;
+            let interval = setInterval(() => {
+                if (progress < 90) {
+                    progress += 15;
+                    if (progressBar) progressBar.style.width = progress + "%";
+                    if (progressText) progressText.innerText = progress + "%";
+                }
+            }, 200);
+
+            let payload = {
+                action: "upload",
+                assetCode: assetCode,
+                fileName: file.name,
+                mimeType: file.type,
+                base64Data: currentBase64
+            };
+
+            try {
+                let response = await fetch(WEB_APP_URL, {
+                    method: "POST",
+                    body: JSON.stringify(payload)
+                });
+                let result = await response.json();
+
+                clearInterval(interval);
+                if (progressBar) progressBar.style.width = "100%";
+                if (progressText) progressText.innerText = "100%";
+
+                setTimeout(() => {
+                    let progressContainer = document.getElementById(`progress_container_${msgId}`);
+                    if (progressContainer) progressContainer.style.display = 'none';
+                    if (statusIcon) statusIcon.innerHTML = " ✓✓"; // WhatsApp blue-style ticks
+                }, 500);
+
+                if (result.success) {
+                    // Automatically trigger Gemini chat with the image for AI analysis
+                    triggerGeminiVisionAnalysis(currentBase64, file.type, captionText || "Please analyze this image.");
+                } else {
+                    alert("Upload failed: " + result.error);
+                }
+            } catch (err) {
+                clearInterval(interval);
+                alert("Upload Exception: " + err.toString());
+            }
+        }
+
+        let captionText = "";
+        async function triggerGeminiVisionAnalysis(base64Img, mime, queryText) {
+            document.getElementById("loadingIndicator").classList.remove("hidden");
+            try {
                 let payload = {
-                    action: "upload",
-                    assetCode: assetCode,
-                    fileName: file.name,
-                    mimeType: file.type,
-                    base64Data: base64Data
+                    action: "geminiChat",
+                    message: queryText,
+                    base64Image: base64Img,
+                    mimeType: mime
                 };
 
-                try {
-                    await fetch(WEB_APP_URL, {
-                        method: "POST",
-                        body: JSON.stringify(payload)
-                    });
-                } catch (err) {
-                    console.error("Drive upload error:", err);
+                let response = await fetch(WEB_APP_URL, {
+                    method: "POST",
+                    body: JSON.stringify(payload)
+                });
+
+                let result = await response.json();
+                document.getElementById("loadingIndicator").classList.add("hidden");
+
+                if (result.success) {
+                    let formattedReply = formatGeminiOutput(result.reply);
+                    appendMessage(formattedReply, 'html', 'bot');
+                } else {
+                    appendMessage("Error: " + result.error, 'text', 'bot');
                 }
-            };
-            reader.readAsDataURL(file);
+            } catch (err) {
+                document.getElementById("loadingIndicator").classList.add("hidden");
+                appendMessage("Network Exception: " + err.toString(), 'text', 'bot');
+            }
         }
 
         function handleKeyPress(event) {
@@ -168,28 +263,18 @@
         async function sendMessage() {
             const input = document.getElementById("userInput");
             const query = input.value.trim();
-            if (!query && !pendingImageBase64) return;
+            if (!query) return;
 
-            const messageText = query || "Is image ke baare mein bataiye.";
-            if (query) {
-                appendMessage(query, 'text', 'user');
-                input.value = "";
-            }
+            appendMessage(query, 'text', 'user');
+            input.value = "";
 
             document.getElementById("loadingIndicator").classList.remove("hidden");
 
             try {
                 let payload = {
                     action: "geminiChat",
-                    message: messageText
+                    message: query
                 };
-
-                // Attach image only if user just uploaded one
-                if (pendingImageBase64) {
-                    payload.base64Image = pendingImageBase64;
-                    payload.mimeType = pendingImageMime;
-                    pendingImageBase64 = null; // reset after sending
-                }
 
                 let response = await fetch(WEB_APP_URL, {
                     method: "POST",
@@ -237,6 +322,36 @@
             }
         }
 
+        function appendMediaMessageWithProgress(imgSrc, caption, msgId, sender) {
+            const container = document.getElementById("chatContainer");
+            const msgDiv = document.createElement("div");
+            msgDiv.className = `flex ${sender === 'user' ? 'justify-end' : 'justify-start'}`;
+
+            const innerDiv = document.createElement("div");
+            innerDiv.className = `p-2 rounded-lg shadow max-w-xs sm:max-w-md text-sm ${sender === 'user' ? 'bg-[#d9fdd3] text-black' : 'bg-white text-black'}`;
+
+            captionText = caption;
+            let captionHtml = caption ? `<p class="mt-1 px-1 text-xs">${caption}</p>` : '';
+
+            innerDiv.innerHTML = `
+                <div class="relative rounded overflow-hidden">
+                    <img src="${imgSrc}" class="rounded max-h-48 object-cover w-full">
+                    <div id="progress_container_${msgId}" class="absolute inset-0 bg-black/50 flex flex-col items-center justify-center text-white">
+                        <div class="w-3/4 bg-gray-300 rounded-full h-2 mb-1 overflow-hidden">
+                            <div id="progress_${msgId}" class="bg-green-500 h-full w-[10%] transition-all duration-200"></div>
+                        </div>
+                        <span id="progresstext_${msgId}" class="text-xs font-bold">10%</span>
+                    </div>
+                </div>
+                ${captionHtml}
+                <div class="text-right text-[10px] text-gray-500 mt-1"><span id="status_${msgId}">🕒</span></div>
+            `;
+
+            msgDiv.appendChild(innerDiv);
+            container.appendChild(msgDiv);
+            container.scrollTop = container.scrollHeight;
+        }
+
         function appendMessage(content, type, sender) {
             const container = document.getElementById("chatContainer");
             const msgDiv = document.createElement("div");
@@ -245,9 +360,7 @@
             const innerDiv = document.createElement("div");
             innerDiv.className = `p-3 rounded-lg shadow max-w-xs sm:max-w-md text-sm ${sender === 'user' ? 'bg-[#d9fdd3] text-black' : 'bg-white text-black'}`;
 
-            if (type === 'image') {
-                innerDiv.innerHTML = `<img src="${content}" class="rounded max-h-48 object-cover">`;
-            } else if (type === 'html') {
+            if (type === 'html') {
                 innerDiv.innerHTML = content;
             } else {
                 innerDiv.innerText = content;
