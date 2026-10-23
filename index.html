@@ -1,263 +1,797 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Data Collection & AI</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        body {
-            background-color: #efeae2;
-            background-image: url("https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png");
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>P&amp;M Technical Support Desk</title>
+  
+  <link rel="icon" type="image/png" href="pm-logo.png?v=130">
+  <link rel="apple-touch-icon" href="pm-logo.png?v=130">
+  <link rel="manifest" href="manifest.json?v=130">
+
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#008069">
+
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    
+    /* 🟢 TRUE EDGE-TO-EDGE FULL SCREEN ADAPTIVE */
+    html, body { 
+      width: 100%; 
+      height: 100%; 
+      margin: 0; 
+      padding: 0; 
+      background: #efeae2; 
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+      overflow: hidden; 
+    }
+    
+    #appContainer { 
+      width: 100vw; 
+      height: 100vh; 
+      background: #efeae2; 
+      display: flex; 
+      flex-direction: column; 
+      position: relative; 
+      margin: 0; 
+      padding: 0;
+      box-shadow: none;
+      border: none;
+      border-radius: 0;
+    }
+
+    /* 🟢 HEADER (Dono corners tak stretched) */
+    .chat-header { 
+      background: #008069; 
+      color: #ffffff; 
+      padding: 10px 16px; 
+      display: flex; 
+      align-items: center; 
+      justify-content: space-between; 
+      flex-shrink: 0; 
+      z-index: 20; 
+      box-shadow: 0 1px 3px rgba(0,0,0,0.18); 
+      width: 100%;
+    }
+    .header-left { display: flex; align-items: center; gap: 12px; overflow: hidden; }
+    .header-avatar { width: 44px; height: 44px; border-radius: 50%; background: #005c4b; display: flex; align-items: center; justify-content: center; flex-shrink: 0; overflow: hidden; border: 1.5px solid rgba(255, 255, 255, 0.4); }
+    .header-avatar img { width: 100%; height: 100%; object-fit: cover; transform: scale(1.24); }
+
+    .header-info h3 { font-size: 16px; font-weight: 600; line-height: 1.2; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
+    .header-info p { font-size: 12px; color: #a7f3d0; line-height: 1.2; margin-top: 2px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
+    .header-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    
+    .mode-btn { background: rgba(255, 255, 255, 0.16); border: 1px solid rgba(255, 255, 255, 0.22); color: #ffffff; padding: 6px 12px; border-radius: 14px; font-size: 12px; font-weight: 600; cursor: pointer; }
+    .mode-btn.active { background: #fbbf24; border-color: #f59e0b; color: #111827; }
+
+    /* 🟢 CHAT MESSAGES SCROLLER & DYNAMIC FEED WRAPPER */
+    .chat-messages { 
+      flex: 1; 
+      overflow-y: auto; 
+      -webkit-overflow-scrolling: touch; 
+      padding: 14px 16px; 
+      display: flex; 
+      flex-direction: column; 
+      gap: 10px; 
+      position: relative; 
+      background-color: #efeae2; 
+      background-image: linear-gradient(rgba(239, 234, 226, 0.88), rgba(239, 234, 226, 0.88)), url('chat-bg.png?v=130'); 
+      background-repeat: repeat; 
+      background-size: 380px auto; 
+    }
+
+    /* Desktop par content center me balanced read layout */
+    @media (min-width: 900px) {
+      .chat-messages {
+        padding: 20px calc(50vw - 450px);
+      }
+      .chat-input-bar {
+        padding: 10px calc(50vw - 450px) !important;
+      }
+      .reply-context-tray, .attachment-preview-bar {
+        margin: 0 calc(50vw - 450px);
+      }
+    }
+
+    .msg { max-width: 86%; padding: 9px 13px; border-radius: 7.5px; font-size: 14px; line-height: 1.55; word-wrap: break-word; position: relative; z-index: 2; box-shadow: 0 1px 0.5px rgba(11,20,26,.13); }
+    .bot-msg { align-self: flex-start; background: #ffffff; color: #111b21; border-top-left-radius: 0; }
+    .user-msg { align-self: flex-end; background: #d9fdd3; color: #111b21; border-top-right-radius: 0; }
+
+    .msg-reply-trigger { float: right; margin-left: 8px; margin-bottom: 2px; font-size: 11px; background: rgba(0,0,0,0.06); padding: 2px 6px; border-radius: 4px; cursor: pointer; color: #008069; font-weight: 600; user-select: none; }
+    .msg-reply-trigger:active { background: rgba(0,0,0,0.15); }
+
+    .quoted-box-bubble { background: rgba(0,0,0,0.06); border-left: 4px solid #008069; padding: 4px 8px; border-radius: 4px; margin-bottom: 6px; font-size: 11.5px; display: flex; align-items: center; gap: 6px; }
+    .quoted-box-bubble img { width: 34px; height: 34px; object-fit: cover; border-radius: 3px; }
+    .quoted-box-bubble .q-text { color: #334155; max-width: 280px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .bubble-img { display: block; width: 100%; max-width: 250px; max-height: 200px; object-fit: cover; border-radius: 6px; border: 1px solid rgba(0,0,0,0.1); margin-bottom: 4px; cursor: pointer; }
+    .bubble-file-chip { display: flex; align-items: center; gap: 8px; background: rgba(0,0,0,0.06); padding: 7px 10px; border-radius: 6px; font-size: 12.5px; margin-bottom: 4px; }
+    .msg-meta { display: flex; align-items: center; justify-content: flex-end; gap: 3px; font-size: 10px; color: #667781; margin-top: 3px; clear: both; }
+    .status-tick { color: #53bdeb; font-size: 11px; }
+
+    /* 🟢 WHATSAPP STYLE DOCUMENT ACTION CARD */
+    .wa-doc-box { margin-top: 8px; background: #f0f2f5; border: 1px solid #d1d7db; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+    .wa-doc-header { display: flex; align-items: center; gap: 10px; }
+    .wa-doc-icon { width: 38px; height: 42px; background: #ef4444; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: bold; font-size: 11px; flex-shrink: 0; }
+    .wa-doc-meta { flex: 1; overflow: hidden; }
+    .wa-doc-name { font-size: 13.5px; font-weight: 600; color: #111b21; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .wa-doc-sub { font-size: 11.5px; color: #667781; margin-top: 2px; }
+    .wa-doc-actions { display: flex; gap: 6px; margin-top: 2px; }
+    .wa-doc-btn { flex: 1; text-align: center; background: #008069; color: #fff; border: none; border-radius: 6px; padding: 10px 0; font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 5px; }
+    .wa-doc-btn.secondary { background: #0284c7; color: #fff; }
+    .wa-doc-btn:active { opacity: 0.85; }
+
+    .wa-typing-bubble { align-self: flex-start; background: #ffffff; padding: 10px 14px; border-radius: 7.5px; border-top-left-radius: 0; box-shadow: 0 1px 0.5px rgba(11,20,26,.13); display: inline-flex; align-items: center; gap: 5px; }
+    .wa-dot { width: 7px; height: 7px; background: #008069; border-radius: 50%; opacity: 0.35; animation: waDotPulse 1.2s infinite ease-in-out; }
+    .wa-dot:nth-child(2) { animation-delay: 0.2s; }
+    .wa-dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes waDotPulse { 0%, 60%, 100% { transform: translateY(0); opacity: 0.35; } 30% { transform: translateY(-5px); opacity: 1; } }
+
+    .reply-context-tray { background: #f0fdf4; border-top: 1px solid #cbd5e1; border-left: 5px solid #008069; padding: 6px 14px; display: none; align-items: center; justify-content: space-between; font-size: 12px; flex-shrink: 0; z-index: 24; }
+    .reply-details { display: flex; align-items: center; gap: 8px; overflow: hidden; }
+    .reply-thumb-mini { width: 34px; height: 34px; border-radius: 4px; object-fit: cover; border: 1px solid #86efac; flex-shrink: 0; }
+    .reply-texts { overflow: hidden; }
+    .reply-texts strong { font-size: 11.5px; color: #008069; display: block; }
+    .reply-texts span { font-size: 11.5px; color: #475569; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+
+    .attachment-preview-bar { padding: 8px 14px; background: #f1f5f9; border-top: 1px solid #cbd5e1; display: none; align-items: center; gap: 10px; flex-shrink: 0; z-index: 25; }
+    .tray-thumb { width: 44px; height: 44px; border-radius: 6px; object-fit: cover; border: 1px solid #cbd5e1; background: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+    .tray-details { flex: 1; overflow: hidden; }
+    .tray-title { font-size: 12.5px; font-weight: 600; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tray-hint { font-size: 11px; color: #008069; margin-top: 1px; }
+
+    .media-sheet { position: absolute; bottom: 58px; left: 14px; background: #ffffff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.18); border: 1px solid #e2e8f0; padding: 8px; display: none; flex-direction: column; gap: 4px; z-index: 40; width: 180px; }
+    .media-opt { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 8px; font-size: 13.5px; color: #1e293b; cursor: pointer; border: none; background: transparent; width: 100%; text-align: left; }
+    .media-opt:active { background: #f1f5f9; }
+
+    .chat-input-bar { padding: 8px 14px; background: #f0f2f5; display: flex; gap: 8px; align-items: center; flex-shrink: 0; border-top: 1px solid #e2e8f0; z-index: 30; width: 100%; }
+    .attach-btn, .mic-btn { width: 42px; height: 42px; border-radius: 50%; background: #e2e8f0; border: none; font-size: 18px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #54656f; flex-shrink: 0; }
+    .mic-btn.listening { background: #ef4444; color: #ffffff; animation: micPulse 1.2s infinite; }
+    @keyframes micPulse { 0% { transform: scale(1); } 70% { transform: scale(1.08); } 100% { transform: scale(1); } }
+    .chat-input-bar input { flex: 1; height: 44px; border: none; border-radius: 22px; padding: 0 18px; font-size: 14.5px; outline: none; background: #ffffff; color: #111b21; }
+    .send-btn { height: 44px; padding: 0 20px; background: #008069; color: #ffffff; border: none; border-radius: 22px; font-weight: 600; font-size: 14.5px; cursor: pointer; flex-shrink: 0; }
+    .chat-input-bar.locked input { background: #e2e8f0; color: #64748b; }
+    .chat-input-bar.locked .send-btn { background: #94a3b8; }
+
+    .onboarding-card { background: #ffffff; border-radius: 8px; padding: 14px 16px; border-left: 4px solid #008069; box-shadow: 0 1px 2px rgba(0,0,0,0.06); font-size: 13.5px; line-height: 1.6; color: #334155; width: 100%; }
+    .followup-container { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+    .followup-chip { background: #f0fdf4; border: 1px solid #86efac; color: #166534; padding: 9px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; text-align: left; cursor: pointer; }
+
+    /* 🟢 UPLOAD MODAL */
+    .upload-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; display: none; align-items: center; justify-content: center; padding: 15px; }
+    .upload-card { background: #fff; width: 100%; max-width: 460px; border-radius: 12px; padding: 22px; box-shadow: 0 8px 30px rgba(0,0,0,0.2); }
+    .upload-card h3 { color: #008069; font-size: 18px; margin-bottom: 14px; }
+    .upload-card label { display: block; font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 6px; }
+    .upload-card input { width: 100%; height: 42px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 0 12px; font-size: 14px; margin-bottom: 14px; }
+    .upload-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 10px; }
+    .upload-actions button { padding: 10px 18px; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; }
+    .btn-cancel { background: #e2e8f0; color: #475569; }
+    .btn-submit { background: #008069; color: #fff; }
+  </style>
 </head>
-<body class="h-screen flex flex-col justify-between">
+<body>
 
-    <!-- Header -->
-    <header class="bg-[#005c4b] text-white p-3 flex justify-between items-center shadow-md">
-        <div class="flex items-center space-x-3">
-            <div class="bg-gray-300 text-black rounded-full p-2 font-bold">🤖</div>
-            <div>
-                <h1 class="font-bold text-base">Data Collection & AI</h1>
-                <p class="text-xs text-green-200" id="currentAssetDisplay">Asset: Select Asset</p>
-            </div>
-        </div>
-        <div class="flex items-center space-x-2">
-            <select id="assetDropdown" class="bg-[#007b65] text-white text-sm px-2 py-1 rounded border-none focus:outline-none" onchange="updateAsset()">
-                <option value="">Select Asset</option>
-            </select>
-            <button onclick="createNewAsset()" class="bg-[#007b65] hover:bg-[#004d40] text-white font-bold px-3 py-1 rounded text-lg">+</button>
-        </div>
-    </header>
-
-    <!-- Chat Area -->
-    <div id="chatContainer" class="flex-1 overflow-y-auto p-4 space-y-3">
-        <div class="flex justify-start">
-            <div class="bg-white text-black p-3 rounded-lg shadow max-w-xs sm:max-w-md text-sm">
-                <p>Namaste! Main aapka AI assistant hoon. Aap mujhse normal chat bhi kar sakte hain aur logsheet ki photo bhej kar table data nikalwa sakte hain.</p>
-            </div>
-        </div>
+<div id="appContainer">
+  <div class="chat-header">
+    <div class="header-left">
+      <div class="header-avatar">
+        <img src="pm-logo.png?v=130" alt="P&amp;M Logo" onerror="this.outerHTML='🚜';">
+      </div>
+      <div class="header-info">
+        <h3>P&amp;M Technical Support</h3>
+        <p id="activeMachineStatus">P&amp;M Technical Desk • Dev: Nitin Misra</p>
+      </div>
     </div>
-
-    <!-- Loading Indicator -->
-    <div id="loadingIndicator" class="hidden text-center py-1 bg-white/80 text-xs font-semibold text-gray-700">
-        Gemini AI is analyzing image and text...
+    <div class="header-actions">
+      <button type="button" class="mode-btn" onclick="openManualModal()">📂 +Manual</button>
+      <button type="button" class="mode-btn" id="generalModeBtn" onclick="toggleGeneralMode()">💬 General</button>
+      <button type="button" class="mode-btn" onclick="resetChat()">🔄</button>
     </div>
+  </div>
 
-    <!-- Input Footer -->
-    <footer class="bg-[#f0f2f5] p-3 flex items-center space-x-2">
-        <input type="file" id="fileInput" accept="image/*" multiple class="hidden" onchange="handleImageSelection(event)">
-        <button onclick="document.getElementById('fileInput').click()" class="bg-gray-200 hover:bg-gray-300 p-2 rounded-full text-gray-700" title="Select photos">
-            📎
-        </button>
-        <input type="text" id="userInput" placeholder="Type a message or ask for table..." class="flex-1 bg-white border border-gray-300 rounded-full px-4 py-2 text-sm focus:outline-none" onkeypress="handleKeyPress(event)">
-        <button onclick="sendMessage()" class="bg-[#00a884] hover:bg-[#008f6f] text-white p-2 rounded-full">
-            ➤
-        </button>
-    </footer>
+  <div class="chat-messages" id="chatBox">
+    <div class="onboarding-card">
+      <strong>📌 P&amp;M Technical Desk Active</strong><br>
+      • Direct machine part number, fault ya drawing reference poochhein.<br>
+      • 💡 Har message aur photo ke upar ↩️ Reply button hai jisse context wapas jud jayega.
+    </div>
+  </div>
 
-    <script>
-        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxOk2IuD_9YmJVzB7QV-8eMLr1V3ncgRvdjfXybSTB1rrPMH59tIHejRGEQ00B0R5AHZg/exec";
-        let selectedAsset = "";
-        let lastImageBase64 = null;
-        let lastImageMime = "image/jpeg";
+  <!-- WHATSAPP STYLE QUOTED REPLY TRAY -->
+  <div class="reply-context-tray" id="replyTray">
+    <div class="reply-details">
+      <img id="replyThumb" class="reply-thumb-mini" style="display:none;" src="" alt="Replying Image">
+      <div class="reply-texts">
+        <strong>Replying to message:</strong>
+        <span id="replySnippet">Text message...</span>
+      </div>
+    </div>
+    <button type="button" onclick="cancelReplyContext()" style="border:none;background:none;color:#ef4444;font-size:18px;font-weight:bold;cursor:pointer;">✕</button>
+  </div>
 
-        window.onload = function() {
-            fetchFolders();
+  <!-- ATTACHMENT PREVIEW TRAY -->
+  <div class="attachment-preview-bar" id="attachmentBar">
+    <div id="trayPreviewSlot" class="tray-thumb">📎</div>
+    <div class="tray-details">
+      <div class="tray-title" id="attachmentFileName">file.jpg</div>
+      <div class="tray-hint">💡 Question likhein aur Send karein.</div>
+    </div>
+    <button type="button" onclick="clearAttachment()" style="border:none;background:none;color:#ef4444;font-size:20px;font-weight:bold;cursor:pointer;">✕</button>
+  </div>
+
+  <!-- ACTION SHEET MENU -->
+  <div class="media-sheet" id="mediaSheet">
+    <button type="button" class="media-opt" onclick="triggerCameraCapture()">📷 Camera</button>
+    <button type="button" class="media-opt" onclick="triggerGalleryPicker()">🖼️ Photos/Gallery</button>
+    <button type="button" class="media-opt" onclick="triggerDocPicker()">📄 Document/File</button>
+  </div>
+
+  <!-- CHAT INPUT BAR -->
+  <div class="chat-input-bar" id="chatInputBar">
+    <button type="button" class="attach-btn" id="attachBtn" onclick="toggleMediaMenu(event)" title="Attach Media">📎</button>
+    
+    <input type="file" id="cameraInput" style="display: none;" accept="image/*" capture="environment" onchange="handleUniversalFile(event)">
+    <input type="file" id="galleryInput" style="display: none;" accept="image/*,video/*,audio/*" onchange="handleUniversalFile(event)">
+    <input type="file" id="docInput" style="display: none;" accept=".pdf,.doc,.docx,.xls,.xlsx,.csv,.txt,.log,.json,.xml" onchange="handleUniversalFile(event)">
+    <input type="file" id="manualFileInput" style="display: none;" accept="application/pdf" onchange="executeManualUpload(event)">
+    
+    <input type="text" id="userInput" placeholder="Sawal likhein ya bolkar batayein..." autocomplete="off" enterkeyhint="send" onkeydown="if(event.key==='Enter'){event.preventDefault();executeOneTapSend();}">
+    <button type="button" class="mic-btn" id="micBtn" onclick="toggleVoiceInput()" title="Bolkar Sawal Poohein">🎙️</button>
+    <button type="button" class="send-btn" id="sendBtn" onclick="executeOneTapSend();">Send</button>
+  </div>
+</div>
+
+<!-- 🟢 MANUAL UPLOAD MODAL -->
+<div class="upload-modal" id="manualUploadModal">
+  <div class="upload-card">
+    <h3>📂 Upload OEM Manual for Verification</h3>
+    <label>Manual Title / Model Name:</label>
+    <input type="text" id="manualTitleInput" placeholder="e.g. Putzmeister SPM 500 Parts Manual">
+    <label>Category / System Note:</label>
+    <input type="text" id="manualCategoryInput" placeholder="e.g. Hydraulic &amp; Boom Overhaul">
+    <div class="upload-actions">
+      <button type="button" class="btn-cancel" onclick="closeManualModal()">Cancel</button>
+      <button type="button" class="btn-submit" onclick="triggerManualFilePick()">Choose PDF &amp; Submit</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  var BACKEND_API_URL = "https://script.google.com/macros/s/AKfycbyVKmZwc0WgbUGO4OfPMV_1kG2JyNHUORQv0E6yGcG2ihJNTHi5f56HjnzuBvtZ_lHe/exec";
+
+  var currentMachine = "";
+  var currentMachineName = "";
+  var isGeneral = false;
+  var activeAttachment = null;
+  var lastSentTimestamp = 0;
+  var isRecognizing = false;
+  var speechRecognizer = null;
+  var isBusyProcessing = false;
+
+  var currentReplyingContext = null; 
+  var messageHistoryStore = {};
+
+  function warmUpBackendInstance() {
+    try {
+      fetch(BACKEND_API_URL, {
+        method: "POST",
+        mode: "cors",
+        redirect: "follow",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ action: "ping" })
+      }).catch(function() {});
+    } catch(e) {}
+  }
+
+  function triggerHaptic(duration) {
+    if (window.navigator && window.navigator.vibrate) window.navigator.vibrate(duration || 30);
+  }
+
+  function getFormattedTime() {
+    var now = new Date();
+    var h = now.getHours();
+    var m = now.getMinutes();
+    var ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12;
+    h = h ? h : 12;
+    return h + ':' + (m < 10 ? '0' + m : m) + ' ' + ampm;
+  }
+
+  function scrollToBottom() {
+    var box = document.getElementById('chatBox');
+    if (box) setTimeout(function() { box.scrollTop = box.scrollHeight; }, 20);
+  }
+
+  // 🟢 DIRECT NATIVE RAW STREAM (Bypasses Google Drive Web Player completely)
+  function openDrawingViewer(fileId, title, page) {
+    if (!fileId) {
+      alert("Document link unavailable.");
+      return;
+    }
+    var targetP = parseInt(page, 10) || 1;
+
+    // Clipboard auto-copy helper for quick jump
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(targetP.toString()).catch(function() {});
+    }
+
+    var rawNativeUrl = "https://drive.google.com/uc?id=" + fileId + "&export=download#page=" + targetP;
+    window.open(rawNativeUrl, '_blank', 'noopener,noreferrer');
+  }
+
+  function openManualModal() { document.getElementById('manualUploadModal').style.display = "flex"; }
+  function closeManualModal() { document.getElementById('manualUploadModal').style.display = "none"; }
+  function triggerManualFilePick() { document.getElementById('manualFileInput').click(); }
+
+  function executeManualUpload(event) {
+    var file = event.target.files[0];
+    if (!file) return;
+
+    var customTitle = document.getElementById('manualTitleInput').value.trim();
+    var categoryDesc = document.getElementById('manualCategoryInput').value.trim();
+    closeManualModal();
+
+    setInputLocked(true);
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var base64Data = e.target.result.split(',')[1];
+      fetch(BACKEND_API_URL, {
+        method: "POST",
+        mode: "cors",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({
+          action: "upload",
+          base64: base64Data,
+          fileName: file.name,
+          mimeType: "application/pdf",
+          customTitle: customTitle,
+          categoryDesc: categoryDesc
+        })
+      })
+      .then(function(res) { return res.json(); })
+      .then(function(res) {
+        setInputLocked(false);
+        alert(res.message || "Manual verification queue me send ho gaya hai.");
+      })
+      .catch(function(err) {
+        setInputLocked(false);
+        alert("Upload error: " + err.toString());
+      });
+    };
+    reader.readAsDataURL(file);
+    event.target.value = "";
+  }
+
+  function toggleMediaMenu(e) {
+    e.stopPropagation();
+    var sheet = document.getElementById('mediaSheet');
+    sheet.style.display = (sheet.style.display === 'flex') ? 'none' : 'flex';
+  }
+
+  document.addEventListener('click', function() {
+    var sheet = document.getElementById('mediaSheet');
+    if (sheet) sheet.style.display = 'none';
+  });
+
+  function triggerCameraCapture() { document.getElementById('cameraInput').click(); }
+  function triggerGalleryPicker() { document.getElementById('galleryInput').click(); }
+  function triggerDocPicker() { document.getElementById('docInput').click(); }
+
+  function setReplyContext(msgId) {
+    var item = messageHistoryStore[msgId];
+    if (!item) return;
+
+    currentReplyingContext = {
+      msgId: msgId,
+      text: item.text || "",
+      dataUrl: item.dataUrl || null,
+      base64: item.base64 || null,
+      mimeType: item.mimeType || null
+    };
+
+    var tray = document.getElementById('replyTray');
+    var thumb = document.getElementById('replyThumb');
+    var snippet = document.getElementById('replySnippet');
+
+    if (item.dataUrl) {
+      thumb.src = item.dataUrl;
+      thumb.style.display = 'block';
+    } else {
+      thumb.style.display = 'none';
+    }
+
+    snippet.innerText = item.text || (item.dataUrl ? "[Photo]" : "[Message]");
+    tray.style.display = 'flex';
+    document.getElementById('userInput').focus();
+    triggerHaptic(30);
+  }
+
+  function cancelReplyContext() {
+    currentReplyingContext = null;
+    document.getElementById('replyTray').style.display = 'none';
+  }
+
+  function setInputLocked(locked) {
+    isBusyProcessing = locked;
+    var bar = document.getElementById('chatInputBar');
+    var input = document.getElementById('userInput');
+    var sendBtn = document.getElementById('sendBtn');
+    if (locked) {
+      if (bar) bar.classList.add('locked');
+      if (input) {
+        input.disabled = true;
+        input.placeholder = "⏳ Processing... please wait";
+      }
+      if (sendBtn) sendBtn.disabled = true;
+    } else {
+      if (bar) bar.classList.remove('locked');
+      if (input) {
+        input.disabled = false;
+        input.placeholder = "Sawal likhein ya bolkar batayein...";
+        input.focus();
+      }
+      if (sendBtn) sendBtn.disabled = false;
+    }
+  }
+
+  function renderRichContent(rawText) {
+    if (!rawText || !rawText.trim()) return "";
+    var parsedHtml = rawText;
+    if (window.marked) {
+      marked.setOptions({ gfm: true, breaks: true });
+      parsedHtml = marked.parse(rawText);
+    }
+    return parsedHtml;
+  }
+
+  function handleUniversalFile(event) {
+    var file = event.target.files[0];
+    if (!file) return;
+
+    var previewSlot = document.getElementById('trayPreviewSlot');
+    var trayTitle = document.getElementById('attachmentFileName');
+    var trayBar = document.getElementById('attachmentBar');
+
+    trayTitle.innerText = file.name;
+    trayBar.style.display = 'flex';
+
+    var mime = (file.type || "").toLowerCase();
+    var isImage = mime.indexOf("image/") === 0;
+
+    if (isImage) {
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        var img = new Image();
+        img.onload = function() {
+          var canvas = document.createElement('canvas');
+          var max_dim = 800;
+          var w = img.width;
+          var h = img.height;
+          if (w > h && w > max_dim) { h = Math.round((h * max_dim) / w); w = max_dim; }
+          else if (h > max_dim) { w = Math.round((w * max_dim) / h); h = max_dim; }
+          canvas.width = w; canvas.height = h;
+          var ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          var dataUrl = canvas.toDataURL('image/jpeg', 0.62);
+
+          activeAttachment = {
+            fileName: file.name,
+            mimeType: "image/jpeg",
+            base64: dataUrl.split(',')[1],
+            dataUrl: dataUrl
+          };
+
+          previewSlot.innerHTML = '<img src="' + dataUrl + '" style="width:100%;height:100%;object-fit:cover;border-radius:6px;">';
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    } else {
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        activeAttachment = {
+          fileName: file.name,
+          mimeType: mime || "application/octet-stream",
+          base64: e.target.result.split(',')[1],
+          textExtract: null,
+          dataUrl: null
+        };
+        previewSlot.innerHTML = '📁';
+      };
+      reader.readAsDataURL(file);
+    }
+
+    var input = document.getElementById('userInput');
+    input.placeholder = "Is attachment se related sawal likhein...";
+    input.focus();
+    event.target.value = "";
+  }
+
+  function clearAttachment() {
+    activeAttachment = null;
+    document.getElementById('attachmentBar').style.display = "none";
+    document.getElementById('trayPreviewSlot').innerHTML = '📎';
+    document.getElementById('userInput').placeholder = "Sawal likhein ya bolkar batayein...";
+  }
+
+  function toggleVoiceInput() {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      alert("Aapka browser Speech Recognition support nahi karta.");
+      return;
+    }
+
+    var micBtn = document.getElementById('micBtn');
+
+    if (isRecognizing) {
+      if (speechRecognizer) speechRecognizer.stop();
+      isRecognizing = false;
+      micBtn.classList.remove('listening');
+      return;
+    }
+
+    var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    speechRecognizer = new SpeechRecognition();
+    speechRecognizer.continuous = false;
+    speechRecognizer.interimResults = false;
+    speechRecognizer.lang = 'hi-IN';
+
+    speechRecognizer.onstart = function() {
+      isRecognizing = true;
+      micBtn.classList.add('listening');
+      triggerHaptic(50);
+    };
+
+    speechRecognizer.onresult = function(event) {
+      var transcript = event.results[0][0].transcript;
+      var input = document.getElementById('userInput');
+      input.value = (input.value ? input.value + ' ' : '') + transcript;
+      input.focus();
+    };
+
+    speechRecognizer.onerror = function() {
+      isRecognizing = false;
+      micBtn.classList.remove('listening');
+    };
+
+    speechRecognizer.onend = function() {
+      isRecognizing = false;
+      micBtn.classList.remove('listening');
+    };
+
+    speechRecognizer.start();
+  }
+
+  function toggleGeneralMode() {
+    isGeneral = !isGeneral;
+    var btn = document.getElementById('generalModeBtn');
+    if (isGeneral) {
+      btn.classList.add('active');
+      btn.innerText = "⚡ General ON";
+      currentMachine = "";
+      currentMachineName = "";
+      document.getElementById('activeMachineStatus').innerText = "Mode: Universal P&M Engineering";
+    } else {
+      btn.classList.remove('active');
+      btn.innerText = "💬 General";
+      document.getElementById('activeMachineStatus').innerText = "P&M Technical Desk • Dev: Nitin Misra";
+    }
+  }
+
+  function resetChat() {
+    currentMachine = "";
+    currentMachineName = "";
+    clearAttachment();
+    cancelReplyContext();
+    setInputLocked(false);
+    document.getElementById('activeMachineStatus').innerText = "P&M Technical Desk • Dev: Nitin Misra";
+    document.getElementById('chatBox').innerHTML = '<div class="onboarding-card"><strong>Session Reset</strong><br>Naye sawal se start karein.</div>';
+  }
+
+  function handleFollowUp(text) {
+    if (isBusyProcessing) return;
+    if (text.indexOf("Reset") !== -1) { resetChat(); return; }
+    document.getElementById('userInput').value = text;
+    executeOneTapSend();
+  }
+
+  function executeOneTapSend() {
+    if (isBusyProcessing) return;
+
+    var now = Date.now();
+    if (now - lastSentTimestamp < 300) return;
+    lastSentTimestamp = now;
+
+    var input = document.getElementById('userInput');
+    var q = (input.value || '').trim();
+    if (!q && !activeAttachment && !currentReplyingContext) return;
+
+    var currentText = q;
+    var qClean = currentText.toLowerCase().replace(/[.,!?;:]/g, "").trim();
+
+    if (!activeAttachment && !currentReplyingContext && !currentMachine && /^(hi|hello|hey|namaste|pranam|ram\s*ram)$/i.test(qClean)) {
+      input.value = '';
+      var box = document.getElementById('chatBox');
+      var uNode = document.createElement('div');
+      uNode.className = 'msg user-msg';
+      uNode.innerHTML = escapeHtml(currentText) + '<div class="msg-meta">' + getFormattedTime() + ' <span class="status-tick">✓✓</span></div>';
+      box.appendChild(uNode);
+
+      var bNode = document.createElement('div');
+      bNode.className = 'msg bot-msg';
+      bNode.innerHTML = "Haan bhai, bolo! P&M desk active hai. Kaunsi machine par kaam chal raha hai? Model ya breakdown batayein.<div class=\"msg-meta\">" + getFormattedTime() + "</div>";
+      box.appendChild(bNode);
+      scrollToBottom();
+      return;
+    }
+
+    setInputLocked(true);
+    triggerHaptic(25);
+    input.value = '';
+
+    var toSendAttach = null;
+    var userBubbleThumb = null;
+    var quotedContextToSend = null;
+
+    if (activeAttachment) {
+      toSendAttach = {
+        fileName: activeAttachment.fileName,
+        mimeType: activeAttachment.mimeType,
+        base64: activeAttachment.base64
+      };
+      userBubbleThumb = activeAttachment.dataUrl;
+    } else if (currentReplyingContext && currentReplyingContext.base64) {
+      toSendAttach = {
+        fileName: "quoted_image.jpg",
+        mimeType: currentReplyingContext.mimeType || "image/jpeg",
+        base64: currentReplyingContext.base64
+      };
+      userBubbleThumb = currentReplyingContext.dataUrl;
+    }
+
+    if (currentReplyingContext) {
+      quotedContextToSend = {
+        text: currentReplyingContext.text,
+        hasImage: !!currentReplyingContext.dataUrl
+      };
+    }
+
+    var capturedReplySnapshot = currentReplyingContext;
+    clearAttachment();
+    cancelReplyContext();
+
+    var currentMsgId = "msg-" + Date.now();
+    messageHistoryStore[currentMsgId] = {
+      text: currentText,
+      dataUrl: userBubbleThumb || (capturedReplySnapshot ? capturedReplySnapshot.dataUrl : null),
+      base64: toSendAttach ? toSendAttach.base64 : null
+    };
+
+    var box = document.getElementById('chatBox');
+    var userNode = document.createElement('div');
+    userNode.className = 'msg user-msg';
+    userNode.id = currentMsgId;
+
+    var replyBtnHtml = '<span class="msg-reply-trigger" onclick="setReplyContext(\'' + currentMsgId + '\')">↩️ Reply</span>';
+    var quotedHtml = '';
+    if (capturedReplySnapshot) {
+      var qThumb = capturedReplySnapshot.dataUrl ? '<img src="' + capturedReplySnapshot.dataUrl + '">' : '';
+      var qTxt = capturedReplySnapshot.text || (capturedReplySnapshot.dataUrl ? "Photo" : "Message");
+      quotedHtml = '<div class="quoted-box-bubble">' + qThumb + '<div class="q-text">↩️ ' + escapeHtml(qTxt) + '</div></div>';
+    }
+
+    var mediaHtml = '';
+    if (userBubbleThumb) {
+      mediaHtml = '<div class="bubble-media-container"><img class="bubble-img" src="' + userBubbleThumb + '" alt="Photo" onclick="setReplyContext(\'' + currentMsgId + '\')"></div>';
+    }
+
+    var textHtml = currentText ? escapeHtml(currentText).replace(/\n/g, '<br>') : '<i>[Media attached for inspection]</i>';
+    userNode.innerHTML = replyBtnHtml + quotedHtml + mediaHtml + textHtml + '<div class="msg-meta">' + getFormattedTime() + ' <span class="status-tick">✓✓</span></div>';
+    box.appendChild(userNode);
+
+    var typingId = "typ-" + Date.now();
+    var bubbleNode = document.createElement('div');
+    bubbleNode.className = 'wa-typing-bubble';
+    bubbleNode.id = typingId;
+    bubbleNode.innerHTML = '<div class="wa-dot"></div><div class="wa-dot"></div><div class="wa-dot"></div>';
+    box.appendChild(bubbleNode);
+    scrollToBottom();
+
+    fetch(BACKEND_API_URL, {
+      method: "POST",
+      mode: "cors",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({
+        action: "ask",
+        query: currentText,
+        machineKey: isGeneral ? "" : currentMachine,
+        isGeneral: isGeneral,
+        attachment: toSendAttach,
+        quotedContext: quotedContextToSend
+      })
+    })
+    .then(function(res) { return res.json(); })
+    .then(function(res) {
+      var el = document.getElementById(typingId);
+      if (!el) { setInputLocked(false); return; }
+
+      if (!isGeneral && res && res.machineKey && res.machineName) {
+        currentMachine = res.machineKey;
+        currentMachineName = res.machineName;
+        document.getElementById('activeMachineStatus').innerText = "Active: " + res.machineName;
+      }
+
+      var rawReply = (res && res.reply) ? res.reply.trim() : "Response empty mila hai.";
+      var replyHtml = renderRichContent(rawReply);
+
+      // 🟢 SMART ACTION CARDS
+      var cardHtml = "";
+      if (res && res.card && res.card.id) {
+        var c = res.card;
+        var targetP = c.page || 1;
+        var downloadHref = "https://drive.google.com/uc?export=download&id=" + c.id;
+
+        var buttonHtml = "";
+        if (c.mode === "download_only") {
+          buttonHtml = '<a href="' + downloadHref + '" target="_blank" class="wa-doc-btn">⬇️ Download Complete PDF (' + (c.sizeKb > 0 ? (Math.round(c.sizeKb/1024) + ' MB') : 'Manual') + ')</a>';
+        } else {
+          buttonHtml = '<button type="button" class="wa-doc-btn secondary" onclick="openDrawingViewer(\'' + c.id + '\', \'' + escapeHtmlAttr(c.title) + '\', ' + targetP + ')">🎯 Open Drawing (Page ' + targetP + ') ↗</button>';
         }
 
-        function updateAsset() {
-            const dropdown = document.getElementById("assetDropdown");
-            selectedAsset = dropdown.value;
-            document.getElementById("currentAssetDisplay").innerText = "Asset: " + (selectedAsset || "None");
+        cardHtml = 
+          '<div class="wa-doc-box">' +
+            '<div class="wa-doc-header">' +
+              '<div class="wa-doc-icon">PDF</div>' +
+              '<div class="wa-doc-meta">' +
+                '<div class="wa-doc-name">' + escapeHtml(c.title) + '</div>' +
+                '<div class="wa-doc-sub">' + (c.mode === "download_only" ? "Full OEM Manual • " : ("Target: <strong>Page " + targetP + "</strong> • ")) + (c.sizeKb > 0 ? (c.sizeKb + ' KB') : 'Document') + '</div>' +
+              '</div>' +
+            '</div>' +
+            '<div class="wa-doc-actions">' +
+              buttonHtml +
+            '</div>' +
+          '</div>';
+      }
+
+      var fpHtml = '';
+      if (res && res.followUps && res.followUps.length > 0) {
+        fpHtml = '<div class="followup-container">';
+        for (var i = 0; i < res.followUps.length; i++) {
+          fpHtml += '<button type="button" class="followup-chip" onclick="handleFollowUp(\'' + escapeHtmlAttr(res.followUps[i]) + '\')">👉 ' + escapeHtml(res.followUps[i]) + '</button>';
         }
+        fpHtml += '</div>';
+      }
 
-        function createNewAsset() {
-            let newAsset = prompt("Enter new Asset Code / Name:");
-            if (newAsset) {
-                selectedAsset = newAsset.trim();
-                let dropdown = document.getElementById("assetDropdown");
-                let option = document.createElement("option");
-                option.value = selectedAsset;
-                option.text = selectedAsset;
-                dropdown.add(option);
-                dropdown.value = selectedAsset;
-                updateAsset();
-            }
-        }
+      var botMsgId = "msg-" + Date.now();
+      messageHistoryStore[botMsgId] = { text: rawReply, dataUrl: null };
+      var botReplyBtn = '<span class="msg-reply-trigger" onclick="setReplyContext(\'' + botMsgId + '\')">↩️ Reply</span>';
 
-        async function fetchFolders() {
-            try {
-                let response = await fetch(WEB_APP_URL, {
-                    method: "POST",
-                    body: JSON.stringify({ action: "getFolders" })
-                });
-                let result = await response.json();
-                if (result.success && result.folders) {
-                    let dropdown = document.getElementById("assetDropdown");
-                    result.folders.forEach(folder => {
-                        let option = document.createElement("option");
-                        option.value = folder;
-                        option.text = folder;
-                        dropdown.add(option);
-                    });
-                }
-            } catch (err) {
-                console.error("Error fetching folders:", err);
-            }
-        }
+      el.outerHTML = '<div class="msg bot-msg" id="' + botMsgId + '">' + botReplyBtn + replyHtml + cardHtml + fpHtml + '<div class="msg-meta">' + getFormattedTime() + '</div></div>';
+      scrollToBottom();
+      setInputLocked(false);
+    })
+    .catch(function(err) {
+      var el = document.getElementById(typingId);
+      if (el) {
+        el.outerHTML = '<div class="msg bot-msg">⚠️ Network connection drop ho gayi hai. Kripya dobara try karein.<div class="msg-meta">' + getFormattedTime() + '</div></div>';
+      }
+      scrollToBottom();
+      setInputLocked(false);
+    });
+  }
 
-        function handleImageSelection(event) {
-            const files = event.target.files;
-            if (!files || files.length === 0) return;
+  function escapeHtml(str) { return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function escapeHtmlAttr(str) { return (str || '').replace(/'/g, "\\'").replace(/"/g, '&quot;'); }
 
-            if (!selectedAsset) {
-                alert("Pehle upar se Asset select karein ya naya banayein!");
-                return;
-            }
+  window.addEventListener('DOMContentLoaded', function() {
+    warmUpBackendInstance();
+  });
+</script>
 
-            Array.from(files).forEach(file => {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    let fullDataUrl = e.target.result;
-                    lastImageBase64 = fullDataUrl.split(',')[1];
-                    lastImageMime = file.type;
-
-                    appendMessage(fullDataUrl, 'image', 'user');
-                    uploadToDrive(file, selectedAsset);
-                };
-                reader.readAsDataURL(file);
-            });
-        }
-
-        async function uploadToDrive(file, assetCode) {
-            const reader = new FileReader();
-            reader.onload = async function(e) {
-                let base64Data = e.target.result.split(',')[1];
-                let payload = {
-                    action: "upload",
-                    assetCode: assetCode,
-                    fileName: file.name,
-                    mimeType: file.type,
-                    base64Data: base64Data
-                };
-
-                try {
-                    let response = await fetch(WEB_APP_URL, {
-                        method: "POST",
-                        body: JSON.stringify(payload)
-                    });
-                    let result = await response.json();
-                    if (result.success) {
-                        appendMessage(`✅ Image successfully saved to Google Drive folder: ${assetCode}`, 'text', 'bot');
-                    } else {
-                        appendMessage(`❌ Drive upload failed: ${result.error}`, 'text', 'bot');
-                    }
-                } catch (err) {
-                    appendMessage(`❌ Upload Exception: ${err.toString()}`, 'text', 'bot');
-                }
-            };
-            reader.readAsDataURL(file);
-        }
-
-        function handleKeyPress(event) {
-            if (event.key === 'Enter') {
-                sendMessage();
-            }
-        }
-
-        async function sendMessage() {
-            const input = document.getElementById("userInput");
-            const query = input.value.trim();
-            if (!query && !lastImageBase64) return;
-
-            const messageText = query || "Please analyze this logsheet image and extract table data.";
-            appendMessage(messageText, 'text', 'user');
-            input.value = "";
-
-            document.getElementById("loadingIndicator").classList.remove("hidden");
-
-            try {
-                let payload = {
-                    action: "geminiChat",
-                    message: messageText
-                };
-
-                if (lastImageBase64) {
-                    payload.base64Image = lastImageBase64;
-                    payload.mimeType = lastImageMime;
-                    lastImageBase64 = null;
-                }
-
-                let response = await fetch(WEB_APP_URL, {
-                    method: "POST",
-                    body: JSON.stringify(payload)
-                });
-
-                let result = await response.json();
-                document.getElementById("loadingIndicator").classList.add("hidden");
-
-                if (result.success) {
-                    let formattedReply = formatGeminiOutput(result.reply);
-                    appendMessage(formattedReply, 'html', 'bot');
-                } else {
-                    appendMessage("Error: " + result.error, 'text', 'bot');
-                }
-            } catch (err) {
-                document.getElementById("loadingIndicator").classList.add("hidden");
-                appendMessage("Network Exception: " + err.toString(), 'text', 'bot');
-            }
-        }
-
-        function formatGeminiOutput(text) {
-            let htmlContent = text.replace(/\n/g, '<br>');
-            
-            return `<div class="text-xs space-y-2">${htmlContent}</div>
-            <div class="flex space-x-2 mt-2 pt-2 border-t border-gray-200">
-                <button onclick="copyReplyText(this)" class="bg-gray-200 hover:bg-gray-300 text-black px-2 py-1 rounded text-xs font-semibold">📋 Copy Text</button>
-                <button onclick="shareReplyText(this)" class="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs font-semibold">📤 Share</button>
-            </div>`;
-        }
-
-        function copyReplyText(btn) {
-            let container = btn.parentElement.previousElementSibling;
-            navigator.clipboard.writeText(container.innerText).then(() => {
-                alert("Text copied to clipboard!");
-            });
-        }
-
-        function shareReplyText(btn) {
-            let container = btn.parentElement.previousElementSibling;
-            let text = container.innerText;
-            if (navigator.share) {
-                navigator.share({ title: 'AI Response', text: text }).catch(err => console.log(err));
-            } else {
-                window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
-            }
-        }
-
-        function appendMessage(content, type, sender) {
-            const container = document.getElementById("chatContainer");
-            const msgDiv = document.createElement("div");
-            msgDiv.className = `flex ${sender === 'user' ? 'justify-end' : 'justify-start'}`;
-
-            const innerDiv = document.createElement("div");
-            innerDiv.className = `p-3 rounded-lg shadow max-w-xs sm:max-w-md text-sm ${sender === 'user' ? 'bg-[#d9fdd3] text-black' : 'bg-white text-black'}`;
-
-            if (type === 'image') {
-                innerDiv.innerHTML = `<img src="${content}" class="rounded max-h-48 object-cover">`;
-            } else if (type === 'html') {
-                innerDiv.innerHTML = content;
-            } else {
-                innerDiv.innerText = content;
-            }
-
-            msgDiv.appendChild(innerDiv);
-            container.appendChild(msgDiv);
-            container.scrollTop = container.scrollHeight;
-        }
-    </script>
 </body>
 </html>
