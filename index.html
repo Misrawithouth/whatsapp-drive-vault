@@ -58,11 +58,6 @@
         </div>
     </div>
 
-    <!-- Loading Indicator -->
-    <div id="loadingIndicator" class="hidden text-center py-1 bg-white/80 text-xs font-semibold text-gray-700">
-        AI is thinking...
-    </div>
-
     <!-- Input Footer -->
     <footer class="bg-[#f0f2f5] p-3 flex items-center space-x-2">
         <input type="file" id="fileInput" accept="image/*" class="hidden" onchange="handleImageSelection(event)">
@@ -80,6 +75,7 @@
         let selectedAsset = "";
         let currentFile = null;
         let currentBase64 = null;
+        let captionText = "";
 
         window.onload = function() {
             fetchFolders();
@@ -147,7 +143,7 @@
                 document.getElementById("mediaModal").classList.remove("hidden");
             };
             reader.readAsDataURL(currentFile);
-            event.target.value = ""; // reset input
+            event.target.value = "";
         }
 
         function closeModal() {
@@ -159,15 +155,13 @@
         async function sendSelectedImage() {
             if (!currentFile || !currentBase64) return;
 
-            const caption = document.getElementById("modalCaptionInput").value.trim();
+            captionText = document.getElementById("modalCaptionInput").value.trim();
             const fullDataUrl = document.getElementById("modalImagePreview").src;
             closeModal();
 
-            // Append image with WhatsApp progress bar layout
             const msgId = "msg_" + Date.now();
-            appendMediaMessageWithProgress(fullDataUrl, caption, msgId, 'user');
+            appendMediaMessageWithProgress(fullDataUrl, captionText, msgId, 'user');
 
-            // Upload to Google Drive with simulated/real progress
             await uploadToDriveWithProgress(currentFile, selectedAsset, msgId);
         }
 
@@ -176,7 +170,6 @@
             let progressText = document.getElementById(`progresstext_${msgId}`);
             let statusIcon = document.getElementById(`status_${msgId}`);
 
-            // Simulate smooth progress animation while uploading
             let progress = 10;
             let interval = setInterval(() => {
                 if (progress < 90) {
@@ -184,7 +177,7 @@
                     if (progressBar) progressBar.style.width = progress + "%";
                     if (progressText) progressText.innerText = progress + "%";
                 }
-            }, 200);
+            }, 150);
 
             let payload = {
                 action: "upload",
@@ -208,12 +201,11 @@
                 setTimeout(() => {
                     let progressContainer = document.getElementById(`progress_container_${msgId}`);
                     if (progressContainer) progressContainer.style.display = 'none';
-                    if (statusIcon) statusIcon.innerHTML = " ✓✓"; // WhatsApp blue-style ticks
-                }, 500);
+                    if (statusIcon) statusIcon.innerHTML = " ✓✓";
+                }, 400);
 
                 if (result.success) {
-                    // Automatically trigger Gemini chat with the image for AI analysis
-                    triggerGeminiVisionAnalysis(currentBase64, file.type, captionText || "Please analyze this image.");
+                    triggerGeminiVisionAnalysis(currentBase64, file.type, captionText || "Please analyze this logsheet image and extract table data.");
                 } else {
                     alert("Upload failed: " + result.error);
                 }
@@ -223,9 +215,7 @@
             }
         }
 
-        let captionText = "";
         async function triggerGeminiVisionAnalysis(base64Img, mime, queryText) {
-            document.getElementById("loadingIndicator").classList.remove("hidden");
             try {
                 let payload = {
                     action: "geminiChat",
@@ -240,7 +230,6 @@
                 });
 
                 let result = await response.json();
-                document.getElementById("loadingIndicator").classList.add("hidden");
 
                 if (result.success) {
                     let formattedReply = formatGeminiOutput(result.reply);
@@ -249,7 +238,6 @@
                     appendMessage("Error: " + result.error, 'text', 'bot');
                 }
             } catch (err) {
-                document.getElementById("loadingIndicator").classList.add("hidden");
                 appendMessage("Network Exception: " + err.toString(), 'text', 'bot');
             }
         }
@@ -268,8 +256,6 @@
             appendMessage(query, 'text', 'user');
             input.value = "";
 
-            document.getElementById("loadingIndicator").classList.remove("hidden");
-
             try {
                 let payload = {
                     action: "geminiChat",
@@ -282,7 +268,6 @@
                 });
 
                 let result = await response.json();
-                document.getElementById("loadingIndicator").classList.add("hidden");
 
                 if (result.success) {
                     let formattedReply = formatGeminiOutput(result.reply);
@@ -291,7 +276,6 @@
                     appendMessage("Error: " + result.error, 'text', 'bot');
                 }
             } catch (err) {
-                document.getElementById("loadingIndicator").classList.add("hidden");
                 appendMessage("Network Exception: " + err.toString(), 'text', 'bot');
             }
         }
@@ -330,7 +314,6 @@
             const innerDiv = document.createElement("div");
             innerDiv.className = `p-2 rounded-lg shadow max-w-xs sm:max-w-md text-sm ${sender === 'user' ? 'bg-[#d9fdd3] text-black' : 'bg-white text-black'}`;
 
-            captionText = caption;
             let captionHtml = caption ? `<p class="mt-1 px-1 text-xs">${caption}</p>` : '';
 
             innerDiv.innerHTML = `
