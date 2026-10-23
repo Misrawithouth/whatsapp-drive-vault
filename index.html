@@ -12,27 +12,35 @@
             background-image: radial-gradient(#d1d7db 1px, transparent 1px);
             background-size: 16px 16px;
         }
-        /* Table styling inside chat messages */
+        /* Custom Styling for HTML Tables in Chat */
         .msg-text table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 8px;
+            margin-bottom: 8px;
             font-size: 12px;
+            background-color: #ffffff;
+            border-radius: 6px;
+            overflow: hidden;
         }
         .msg-text th, .msg-text td {
-            border: 1px solid #cbd5e1;
-            padding: 4px 8px;
+            border: 1px solid #008069;
+            padding: 6px 10px;
             text-align: left;
         }
         .msg-text th {
-            background-color: #f1f5f9;
-            font-weight: 600;
+            background-color: #008069;
+            color: #ffffff;
+            font-weight: bold;
+        }
+        .msg-text tr:nth-child(even) {
+            background-color: #f8fafc;
         }
     </style>
 </head>
 <body class="text-[#111b21] h-screen flex flex-col justify-between font-sans select-none">
 
-    <!-- App Header (Fixed Sticky Top) -->
+    <!-- App Header -->
     <header class="bg-[#008069] text-white p-3 flex items-center justify-between shadow-md sticky top-0 z-50">
         <div class="flex items-center space-x-2">
             <div class="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center font-bold text-white text-base">🤖</div>
@@ -42,7 +50,6 @@
             </div>
         </div>
         
-        <!-- Asset Selector & Plus Button -->
         <div class="flex items-center space-x-1">
             <select id="assetSelect" class="bg-emerald-800 text-white text-xs px-2 py-1.5 rounded-lg border border-emerald-600 focus:outline-none max-w-[120px]">
                 <option value="" selected>General Chat</option>
@@ -51,7 +58,7 @@
         </div>
     </header>
 
-    <!-- Custom Modal for New Asset Code Creation -->
+    <!-- Modal for New Asset Code -->
     <div id="newAssetModal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl p-5 w-full max-w-xs shadow-2xl space-y-4">
             <h3 class="font-bold text-gray-800 text-base">Create New Asset Code</h3>
@@ -63,14 +70,14 @@
         </div>
     </div>
 
-    <!-- Chat Area -->
+    <!-- Chat Container -->
     <main id="chat-container" class="flex-1 overflow-y-auto p-4 flex flex-col space-y-3">
         <div class="self-start bg-white text-[#111b21] p-3 rounded-xl rounded-tl-none max-w-[85%] text-sm shadow-sm border border-gray-200">
-            👋 Welcome! Aap yahan <b>General AI Chat</b> kar sakte hain. Kisi asset ke data/photos analyze karne ya table banana ke liye upar se <b>Asset Code</b> select karein.
+            👋 Welcome! Asset select karein aur data table format mein praapt karein.
         </div>
     </main>
 
-    <!-- WhatsApp Style Media Preview & Send Overlay -->
+    <!-- Media Preview Drawer -->
     <div id="mediaPreviewModal" class="hidden fixed inset-x-0 bottom-14 bg-white border-t border-gray-300 p-3 shadow-2xl z-40 flex flex-col space-y-2 mx-2 rounded-2xl">
         <div class="flex items-center justify-between border-b pb-1">
             <span class="text-xs font-bold text-[#008069]">📎 File Preview & Caption</span>
@@ -80,45 +87,43 @@
             <img id="previewImg" class="w-16 h-16 object-cover rounded-lg border border-gray-200" src="" />
             <div id="previewFileName" class="text-xs text-gray-600 font-mono truncate flex-1"></div>
         </div>
-        <input type="text" id="captionInput" placeholder="Add a caption / comment..." class="w-full bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#008069]">
-        <button id="confirmSendBtn" class="bg-[#008069] text-white py-2.5 rounded-lg text-sm font-semibold shadow-md hover:bg-[#016956] flex items-center justify-center space-x-2">
+        <input type="text" id="captionInput" placeholder="Add a caption..." class="w-full bg-gray-100 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#008069]">
+        <button id="confirmSendBtn" class="bg-[#008069] text-white py-2.5 rounded-lg text-sm font-semibold shadow-md flex items-center justify-center space-x-2">
             <span>Send to Asset Folder</span>
             <span>➤</span>
         </button>
     </div>
 
-    <!-- Hidden IFrame for Uploads -->
     <iframe name="hidden_iframe" id="hidden_iframe" class="hidden"></iframe>
 
-    <!-- Attachment Options Popup -->
-    <div id="attachMenu" class="hidden bg-white border border-gray-200 p-4 rounded-2xl mx-4 mb-2 grid grid-cols-4 gap-4 text-center shadow-2xl transition-all duration-200">
-        <label class="flex flex-col items-center cursor-pointer group">
+    <div id="attachMenu" class="hidden bg-white border border-gray-200 p-4 rounded-2xl mx-4 mb-2 grid grid-cols-4 gap-4 text-center shadow-2xl">
+        <label class="flex flex-col items-center cursor-pointer">
             <div class="w-12 h-12 rounded-full bg-rose-500 flex items-center justify-center text-xl text-white shadow-lg">📷</div>
             <span class="text-xs text-gray-600 mt-1">Camera</span>
             <input type="file" id="cameraInput" accept="image/*" capture="environment" class="hidden">
         </label>
-        <label class="flex flex-col items-center cursor-pointer group">
+        <label class="flex flex-col items-center cursor-pointer">
             <div class="w-12 h-12 rounded-full bg-purple-500 flex items-center justify-center text-xl text-white shadow-lg">🖼️</div>
             <span class="text-xs text-gray-600 mt-1">Photos</span>
             <input type="file" id="photoInput" accept="image/*" class="hidden">
         </label>
-        <label class="flex flex-col items-center cursor-pointer group">
+        <label class="flex flex-col items-center cursor-pointer">
             <div class="w-12 h-12 rounded-full bg-pink-500 flex items-center justify-center text-xl text-white shadow-lg">🎥</div>
             <span class="text-xs text-gray-600 mt-1">Video</span>
             <input type="file" id="videoInput" accept="video/*" class="hidden">
         </label>
-        <label class="flex flex-col items-center cursor-pointer group">
+        <label class="flex flex-col items-center cursor-pointer">
             <div class="w-12 h-12 rounded-full bg-indigo-500 flex items-center justify-center text-xl text-white shadow-lg">📄</div>
             <span class="text-xs text-gray-600 mt-1">Document</span>
             <input type="file" id="fileInput" accept="*/*" class="hidden">
         </label>
     </div>
 
-    <!-- Bottom Action Bar -->
+    <!-- Bottom Footer -->
     <footer class="bg-[#f0f2f5] p-2 px-3 flex items-center space-x-2 z-10 border-t border-gray-200">
-        <button id="toggleAttach" class="text-gray-500 hover:text-gray-700 p-2 text-2xl">📎</button>
-        <input type="text" id="commentInput" placeholder="Ask AI or type a prompt/comment..." class="flex-1 bg-white text-[#111b21] placeholder-gray-400 px-4 py-2.5 rounded-lg focus:outline-none text-sm border border-gray-300 shadow-inner">
-        <button id="sendBtn" class="bg-[#008069] text-white w-10 h-10 rounded-full flex items-center justify-center hover:bg-[#016956] text-lg shadow-md">➤</button>
+        <button id="toggleAttach" class="text-gray-500 p-2 text-2xl">📎</button>
+        <input type="text" id="commentInput" placeholder="Ask AI or type a prompt..." class="flex-1 bg-white text-[#111b21] px-4 py-2.5 rounded-lg focus:outline-none text-sm border border-gray-300">
+        <button id="sendBtn" class="bg-[#008069] text-white w-10 h-10 rounded-full flex items-center justify-center text-lg shadow-md">➤</button>
     </footer>
 
     <script>
@@ -139,9 +144,6 @@
 
         window.addEventListener('load', () => {
             loadAssetFolders();
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('sw.js');
-            }
         });
 
         function loadAssetFolders() {
@@ -166,19 +168,12 @@
 
         assetSelect.addEventListener('change', (e) => {
             currentAssetCode = e.target.value;
-            if(currentAssetCode) {
-                currentAssetDisplay.textContent = "Asset: " + currentAssetCode;
-                appendMessage(null, `📌 Selected Asset Code: <b>${currentAssetCode}</b>. Ab aap is asset ki images analyze karne ka instruction de sakte hain.`, false);
-            } else {
-                currentAssetDisplay.textContent = "General Chat Mode (Gemini)";
-                appendMessage(null, `🤖 Switched to <b>General Chat Mode</b>.`, false);
-            }
+            currentAssetDisplay.textContent = currentAssetCode ? "Asset: " + currentAssetCode : "General Chat Mode (Gemini)";
         });
 
         document.getElementById('openNewAssetModal').addEventListener('click', () => {
             newAssetModal.classList.remove('hidden');
             modalInputCode.value = '';
-            modalInputCode.focus();
         });
 
         document.getElementById('modalCancelBtn').addEventListener('click', () => {
@@ -189,18 +184,13 @@
             let newCode = modalInputCode.value.trim();
             if (newCode) {
                 currentAssetCode = newCode.toUpperCase().replace(/[^a-zA-Z0-9_-]/g, '_');
-                
                 const opt = document.createElement('option');
                 opt.value = currentAssetCode;
                 opt.textContent = currentAssetCode;
                 assetSelect.appendChild(opt);
                 assetSelect.value = currentAssetCode;
-
                 currentAssetDisplay.textContent = "Asset: " + currentAssetCode;
                 newAssetModal.classList.add('hidden');
-                appendMessage(null, `✨ New Asset Code created: <b>${currentAssetCode}</b>`, false);
-            } else {
-                alert("Please enter a valid asset code!");
             }
         });
 
@@ -208,20 +198,16 @@
             document.getElementById('attachMenu').classList.toggle('hidden');
         });
 
-        // Handle File Selection -> Opens WhatsApp Style Preview Drawer
         function bindFile(id, label) {
             document.getElementById(id).addEventListener('change', (e) => {
                 const f = e.target.files[0];
                 if (f) {
                     if (!currentAssetCode) {
-                        alert("Please select an Asset Code first or create a new one using ➕!");
-                        e.target.value = '';
+                        alert("Select Asset Code first!");
                         return;
                     }
-
                     document.getElementById('attachMenu').classList.add('hidden');
                     pendingFile = f;
-
                     if (f.type.startsWith('image/')) {
                         previewImg.src = URL.createObjectURL(f);
                         previewImg.classList.remove('hidden');
@@ -231,8 +217,6 @@
                     previewFileName.textContent = `${label}: ${f.name}`;
                     captionInput.value = '';
                     mediaPreviewModal.classList.remove('hidden');
-                    captionInput.focus();
-
                     e.target.value = '';
                 }
             });
@@ -243,16 +227,13 @@
         bindFile('videoInput', 'Video');
         bindFile('fileInput', 'Document');
 
-        // Cancel Preview Button
         document.getElementById('cancelPreview').addEventListener('click', () => {
             mediaPreviewModal.classList.add('hidden');
             pendingFile = null;
         });
 
-        // Confirm Send Button inside Preview Modal
         document.getElementById('confirmSendBtn').addEventListener('click', () => {
             if (!pendingFile) return;
-
             const f = pendingFile;
             const caption = captionInput.value.trim();
             mediaPreviewModal.classList.add('hidden');
@@ -261,25 +242,16 @@
             const previewUrl = f.type.startsWith('image/') ? URL.createObjectURL(f) : null;
             const msgId = appendMessage(previewUrl, `Uploading...${caption ? '<br>💬 ' + caption : ''}`, true);
 
-            if (f.type.startsWith('image/')) {
-                compressAndUpload(f, caption, msgId);
-            } else {
-                const reader = new FileReader();
-                reader.onload = (readerEvent) => {
-                    sendViaForm(readerEvent.target.result.split(',')[1], f.name, f.type, caption, msgId);
-                };
-                reader.readAsDataURL(f);
-            }
+            compressAndUpload(f, caption, msgId);
         });
 
-        // Send Button: Smartly routes query to General Chat OR Folder AI OCR/Analysis
         document.getElementById('sendBtn').addEventListener('click', () => {
             const textQuery = document.getElementById('commentInput').value.trim();
             if (!textQuery) return;
             document.getElementById('commentInput').value = '';
 
-            const userMsgId = appendMessage(null, textQuery, true);
-            const botMsgId = appendMessage(null, "🤖 Gemini is analyzing...", false);
+            appendMessage(null, textQuery, true);
+            const botMsgId = appendMessage(null, "🤖 Gemini processing...", false);
 
             fetch(GAS_URL, {
                 method: 'POST',
@@ -295,36 +267,26 @@
                 if (res.success) {
                     updateMessageText(botMsgId, res.reply);
                 } else {
-                    updateMessageText(botMsgId, "❌ AI Error: " + (res.error || "Could not fetch response"));
+                    updateMessageText(botMsgId, "❌ Error: " + res.error);
                 }
             })
             .catch(() => {
-                updateMessageText(botMsgId, "❌ Network error connecting to Gemini.");
+                updateMessageText(botMsgId, "❌ Connection Error");
             });
         });
 
-        // Compression (1000px & 0.7 quality) to maintain high text/OCR clarity
         function compressAndUpload(file, comment, msgId) {
             const reader = new FileReader();
             reader.onload = function(e) {
                 const img = new Image();
                 img.onload = function() {
                     const canvas = document.createElement('canvas');
-                    let width = img.width;
-                    let height = img.height;
-                    const MAX_WIDTH = 1000;
-                    const MAX_HEIGHT = 1000;
-                    if (width > height) {
-                        if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
-                    } else {
-                        if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
-                    }
-                    canvas.width = width;
-                    canvas.height = height;
+                    let width = img.width, height = img.height;
+                    if (width > 1000) { height *= 1000 / width; width = 1000; }
+                    canvas.width = width; canvas.height = height;
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, width, height);
-                    const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
-                    const base64Data = compressedDataUrl.split(',')[1];
+                    const base64Data = canvas.toDataURL('image/jpeg', 0.7).split(',')[1];
                     sendViaForm(base64Data, file.name, 'image/jpeg', comment, msgId);
                 };
                 img.src = e.target.result;
@@ -332,7 +294,6 @@
             reader.readAsDataURL(file);
         }
 
-        // Hidden Form Submission method for reliable media uploads without CORS/Network errors
         function sendViaForm(base64Data, fileName, mimeType, comment, msgId) {
             const form = document.createElement('form');
             form.method = 'POST';
@@ -357,7 +318,7 @@
             form.remove();
 
             setTimeout(() => {
-                updateMessageText(msgId, `✅ Uploaded successfully to folder: <b>${currentAssetCode}</b>${comment ? '<br>💬 ' + comment : ''}`);
+                updateMessageText(msgId, `✅ Uploaded to: <b>${currentAssetCode}</b>${comment ? '<br>💬 ' + comment : ''}`);
             }, 1500);
         }
 
@@ -371,12 +332,45 @@
             return div;
         }
 
+        // Markdown-to-HTML Table Parser Fix
+        function parseMarkdownTables(text) {
+            const lines = text.split('\n');
+            let html = '';
+            let inTable = false;
+
+            for (let i = 0; i < lines.length; i++) {
+                let line = lines[i].trim();
+
+                // Detect Markdown Table Row
+                if (line.startsWith('|') && line.endsWith('|')) {
+                    if (line.includes('---')) continue; // Skip delimiter row
+
+                    const cells = line.split('|').slice(1, -1).map(c => c.trim());
+
+                    if (!inTable) {
+                        inTable = true;
+                        html += '<table>';
+                        html += '<tr>' + cells.map(c => `<th>${c}</th>`).join('') + '</tr>';
+                    } else {
+                        html += '<tr>' + cells.map(c => `<td>${c}</td>`).join('') + '</tr>';
+                    }
+                } else {
+                    if (inTable) {
+                        html += '</table>';
+                        inTable = false;
+                    }
+                    html += line + '<br>';
+                }
+            }
+            if (inTable) html += '</table>';
+            return html;
+        }
+
         function updateMessageText(div, newText) {
             const span = div.querySelector('.msg-text');
             if (span) {
-                let formatted = newText
-                    .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
-                    .replace(/\n/g, '<br>');
+                let formatted = parseMarkdownTables(newText)
+                    .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
                 span.innerHTML = formatted;
             }
             chatContainer.scrollTop = chatContainer.scrollHeight;
