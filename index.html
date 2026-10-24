@@ -77,7 +77,7 @@
     <main id="chatStream" class="flex-1 overflow-y-auto p-4 chat-bg space-y-3 pb-20">
       <div class="flex justify-start">
         <div class="max-w-[85%] rounded-lg p-2.5 shadow bubble-in">
-          <div class="text-sm text-gray-800">Haan ji! Main aapka AI assistant hoon. Koi bhi document ya logsheet photo bhejiye, main pehle overview dunga aur jaisa aap kahoge waisa format kar dunga.</div>
+          <div class="text-sm text-gray-800">Haan ji! Main aapka AI assistant hoon. Koi bhi document ya logsheet photo bhejiye, main help karunga.</div>
           <div class="text-[10px] text-gray-400 text-right mt-1">System</div>
         </div>
       </div>
@@ -126,6 +126,7 @@
 
     let selectedImageBase64 = null;
     let selectedImageMime = null;
+    let conversationMemory = []; // Stores recent context for AI memory
 
     window.addEventListener('DOMContentLoaded', () => {
       loadChatHistory();
@@ -231,6 +232,10 @@
       const msgId = appendMessage({ text: caption, img: imgData, isUser: true, status: '🕒' });
       saveChatHistory();
 
+      // Push to memory
+      conversationMemory.push({ role: 'user', text: `[Uploaded Image] ${caption}` });
+      if (conversationMemory.length > 10) conversationMemory.shift();
+
       const typingId = showTypingIndicator();
 
       try {
@@ -243,7 +248,8 @@
             folderId: folderId,
             folderName: folderName,
             imageBase64: imgData,
-            mimeType: mime
+            mimeType: mime,
+            history: conversationMemory
           })
         });
 
@@ -253,6 +259,7 @@
 
         if (result.status === 'success') {
           appendMessage({ text: result.data.reply, isUser: false });
+          conversationMemory.push({ role: 'model', text: result.data.reply });
         } else {
           appendMessage({ text: 'Error: ' + result.message, isUser: false });
         }
@@ -272,6 +279,9 @@
       appendMessage({ text: text, isUser: true, status: '✓✓' });
       saveChatHistory();
 
+      conversationMemory.push({ role: 'user', text: text });
+      if (conversationMemory.length > 10) conversationMemory.shift();
+
       const typingId = showTypingIndicator();
 
       try {
@@ -279,7 +289,8 @@
           method: 'POST',
           body: JSON.stringify({
             action: 'processChat',
-            prompt: text
+            prompt: text,
+            history: conversationMemory
           })
         });
         const result = await res.json();
@@ -287,6 +298,7 @@
 
         if (result.status === 'success') {
           appendMessage({ text: result.data.reply, isUser: false });
+          conversationMemory.push({ role: 'model', text: result.data.reply });
         } else {
           appendMessage({ text: 'Error: ' + result.message, isUser: false });
         }
@@ -397,18 +409,25 @@
     function saveChatHistory() {
       const stream = document.getElementById('chatStream');
       localStorage.setItem('chat_history', stream.innerHTML);
+      localStorage.setItem('chat_memory', JSON.stringify(conversationMemory));
     }
 
     function loadChatHistory() {
       const saved = localStorage.getItem('chat_history');
+      const savedMem = localStorage.getItem('chat_memory');
       if (saved) {
         document.getElementById('chatStream').innerHTML = saved;
+      }
+      if (savedMem) {
+        try { conversationMemory = JSON.parse(savedMem); } catch(e) {}
       }
     }
 
     function clearChatHistory() {
       if (confirm('Kya aap saare purane messages clear karna chahte hain?')) {
         localStorage.removeItem('chat_history');
+        localStorage.removeItem('chat_memory');
+        conversationMemory = [];
         document.getElementById('chatStream').innerHTML = `
           <div class="flex justify-start">
             <div class="max-w-[85%] rounded-lg p-2.5 shadow bubble-in">
