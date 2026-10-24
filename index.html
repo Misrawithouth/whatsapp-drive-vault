@@ -1,374 +1,341 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Data Collection & AI</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        body {
-            background-color: #efeae2;
-            background-image: url("https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png");
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Data Collection PWA</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#075E54">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .chat-bg {
+      background-color: #efeae2;
+      background-image: radial-gradient(#d1c7bd 1px, transparent 0);
+      background-size: 16px 16px;
+    }
+    .bubble-out { background-color: #dcf8c6; }
+    .bubble-in { background-color: #ffffff; }
+  </style>
 </head>
-<body class="h-screen flex flex-col justify-between">
+<body class="bg-gray-100 h-screen flex flex-col font-sans overflow-hidden">
 
-    <!-- Header -->
-    <header class="bg-[#005c4b] text-white p-3 flex justify-between items-center shadow-md">
-        <div class="flex items-center space-x-3">
-            <div class="bg-gray-300 text-black rounded-full p-2 font-bold">🤖</div>
-            <div>
-                <h1 class="font-bold text-base">Data Collection & AI</h1>
-                <p class="text-xs text-green-200" id="currentAssetDisplay">Asset: Select Asset</p>
-            </div>
-        </div>
-        <div class="flex items-center space-x-2">
-            <select id="assetDropdown" class="bg-[#007b65] text-white text-sm px-2 py-1 rounded border-none focus:outline-none" onchange="updateAsset()">
-                <option value="">Select Asset</option>
-            </select>
-            <button onclick="createNewAsset()" class="bg-[#007b65] hover:bg-[#004d40] text-white font-bold px-3 py-1 rounded text-lg">+</button>
-        </div>
-    </header>
-
-    <!-- Chat Area -->
-    <div id="chatContainer" class="flex-1 overflow-y-auto p-4 space-y-3">
-        <div class="flex justify-start">
-            <div class="bg-white text-black p-3 rounded-lg shadow max-w-xs sm:max-w-md text-sm">
-                <p>Namaste! Main aapka AI assistant hoon. Bataiye, aaj main aapki kya madad kar sakta hoon?</p>
-            </div>
-        </div>
+  <!-- TOP HEADER -->
+  <header class="bg-[#075e54] text-white px-4 py-3 flex items-center justify-between shadow-md z-10">
+    <div class="flex items-center space-x-3">
+      <div class="w-10 h-10 rounded-full bg-emerald-700 flex items-center justify-center font-bold text-lg">
+        <i class="fa-solid fa-robot"></i>
+      </div>
+      <div>
+        <h1 class="font-bold text-base leading-tight">Data Collection Vault</h1>
+        <p class="text-xs text-emerald-200" id="status-indicator">Connected to GAS Backend</p>
+      </div>
     </div>
 
-    <!-- WhatsApp Style Media Preview Modal -->
-    <div id="mediaModal" class="hidden fixed inset-0 bg-black/80 z-50 flex flex-col justify-between p-4">
-        <div class="flex justify-between items-center text-white">
-            <span class="font-bold text-base">Preview Photo</span>
-            <button onclick="closeModal()" class="text-white text-2xl font-bold">&times;</button>
-        </div>
-        <div class="flex-1 flex items-center justify-center p-2">
-            <img id="modalImagePreview" class="max-h-[70vh] rounded-lg shadow-lg object-contain">
-        </div>
-        <div class="bg-[#202c33] p-3 rounded-lg flex items-center space-x-2">
-            <input type="text" id="modalCaptionInput" placeholder="Add a caption..." class="flex-1 bg-[#2a3942] text-white placeholder-gray-400 px-4 py-2 rounded-full text-sm focus:outline-none">
-            <button onclick="sendSelectedImage()" class="bg-[#00a884] hover:bg-[#008f6f] text-white p-3 rounded-full flex items-center justify-center shadow-lg">
-                ➤
-            </button>
-        </div>
+    <!-- ASSET SELECTOR DROPDOWN -->
+    <div class="flex items-center space-x-2">
+      <select id="assetSelect" class="bg-[#128c7e] text-white text-xs rounded px-2 py-1.5 focus:outline-none border border-emerald-600 max-w-[130px]">
+        <option value="">Loading Assets...</option>
+      </select>
+      <button onclick="createNewAssetFolder()" class="bg-[#25d366] hover:bg-green-600 text-white rounded-full w-7 h-7 flex items-center justify-center shadow">
+        <i class="fa-solid fa-plus text-xs"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- CHAT MESSAGES AREA -->
+  <main id="chatStream" class="flex-1 overflow-y-auto p-4 chat-bg space-y-3">
+    <!-- Messages appended dynamically -->
+  </main>
+
+  <!-- BOTTOM INPUT BAR -->
+  <footer class="bg-gray-100 p-2 flex items-center space-x-2 border-t border-gray-300">
+    <button onclick="document.getElementById('fileInput').click()" class="text-gray-600 hover:text-emerald-700 p-2 text-xl">
+      <i class="fa-solid fa-paperclip"></i>
+    </button>
+    <input type="file" id="fileInput" accept="image/*" class="hidden" onchange="handleFileSelect(event)">
+    
+    <input type="text" id="messageInput" placeholder="Type a message or asset query..." 
+           class="flex-1 bg-white rounded-full px-4 py-2 text-sm focus:outline-none shadow-inner border border-gray-200"
+           onkeypress="if(event.key === 'Enter') sendTextMessage()">
+
+    <button onclick="sendTextMessage()" class="bg-[#128c7e] hover:bg-[#075e54] text-white rounded-full w-10 h-10 flex items-center justify-center shadow">
+      <i class="fa-solid fa-paper-plane text-sm"></i>
+    </button>
+  </footer>
+
+  <!-- MEDIA PREVIEW MODAL -->
+  <div id="mediaModal" class="fixed inset-0 bg-black/90 z-50 hidden flex flex-col justify-between p-4">
+    <div class="flex justify-between items-center text-white">
+      <span class="text-sm font-semibold">Image Preview</span>
+      <button onclick="closeModal()" class="text-white text-2xl">&times;</button>
+    </div>
+    
+    <div class="flex-1 flex items-center justify-center my-4 overflow-hidden">
+      <img id="modalImgPreview" src="" class="max-h-full max-w-full object-contain rounded">
     </div>
 
-    <!-- Input Footer -->
-    <footer class="bg-[#f0f2f5] p-3 flex items-center space-x-2">
-        <input type="file" id="fileInput" accept="image/*" class="hidden" onchange="handleImageSelection(event)">
-        <button onclick="checkAssetAndTriggerUpload()" class="bg-gray-200 hover:bg-gray-300 p-2 rounded-full text-gray-700" title="Select photo">
-            📎
-        </button>
-        <input type="text" id="userInput" placeholder="Type a message..." class="flex-1 bg-white border border-gray-300 rounded-full px-4 py-2 text-sm focus:outline-none" onkeypress="handleKeyPress(event)">
-        <button onclick="sendMessage()" class="bg-[#00a884] hover:bg-[#008f6f] text-white p-2 rounded-full">
-            ➤
-        </button>
-    </footer>
+    <div class="flex items-center space-x-2">
+      <input type="text" id="modalCaption" placeholder="Add a caption / prompt..." 
+             class="flex-1 bg-gray-800 text-white rounded-full px-4 py-2 text-sm focus:outline-none border border-gray-700">
+      <button onclick="confirmMediaUpload()" class="bg-[#25d366] hover:bg-green-600 text-white rounded-full w-10 h-10 flex items-center justify-center shadow">
+        <i class="fa-solid fa-paper-plane"></i>
+      </button>
+    </div>
+  </div>
 
-    <script>
-        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxOk2IuD_9YmJVzB7QV-8eMLr1V3ncgRvdjfXybSTB1rrPMH59tIHejRGEQ00B0R5AHZg/exec";
-        let selectedAsset = "";
-        let currentFile = null;
-        let currentBase64 = null;
+  <script>
+    // ==========================================
+    // YOUR CONFIGURED GAS WEB APP URL:
+    // ==========================================
+    const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxOk2IuD_9YmJVzB7QV-8eMLr1V3ncgRvdjfXybSTB1rrPMH59tIHejRGEQ00B0R5AHZg/exec";
 
-        window.onload = function() {
-            fetchFolders();
+    let selectedImageBase64 = null;
+    let selectedImageMime = null;
+
+    window.addEventListener('DOMContentLoaded', () => {
+      loadChatHistory();
+      fetchAssetFolders();
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(err => console.log('SW reg error:', err));
+      }
+    });
+
+    async function fetchAssetFolders() {
+      try {
+        const res = await fetch(GAS_WEB_APP_URL, {
+          method: 'POST',
+          body: JSON.stringify({ action: 'getFolders' })
+        });
+        const result = await res.json();
+        if (result.status === 'success') {
+          const select = document.getElementById('assetSelect');
+          select.innerHTML = '<option value="">Select Asset</option>';
+          result.data.forEach(folder => {
+            select.innerHTML += `<option value="${folder.id}">${folder.name}</option>`;
+          });
         }
+      } catch (e) {
+        console.error('Error fetching folders:', e);
+      }
+    }
 
-        function updateAsset() {
-            const dropdown = document.getElementById("assetDropdown");
-            selectedAsset = dropdown.value;
-            document.getElementById("currentAssetDisplay").innerText = "Asset: " + (selectedAsset || "None");
+    async function createNewAssetFolder() {
+      const folderName = prompt('Enter New Asset Code / Name:');
+      if (!folderName) return;
+
+      try {
+        const res = await fetch(GAS_WEB_APP_URL, {
+          method: 'POST',
+          body: JSON.stringify({ action: 'createFolder', folderName: folderName })
+        });
+        const result = await res.json();
+        if (result.status === 'success') {
+          await fetchAssetFolders();
+          document.getElementById('assetSelect').value = result.data.id;
         }
+      } catch (e) {
+        alert('Failed to create folder: ' + e.message);
+      }
+    }
 
-        function createNewAsset() {
-            let newAsset = prompt("Enter new Asset Code / Name:");
-            if (newAsset) {
-                selectedAsset = newAsset.trim();
-                let dropdown = document.getElementById("assetDropdown");
-                let option = document.createElement("option");
-                option.value = selectedAsset;
-                option.text = selectedAsset;
-                dropdown.add(option);
-                dropdown.value = selectedAsset;
-                updateAsset();
-            }
+    function handleFileSelect(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      selectedImageMime = file.type;
+      const reader = new FileReader();
+
+      reader.onload = function (e) {
+        const img = new Image();
+        img.src = e.target.result;
+        img.onload = function () {
+          // Canvas Compression
+          const canvas = document.createElement('canvas');
+          const maxDim = 1024;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height && width > maxDim) {
+            height *= maxDim / width;
+            width = maxDim;
+          } else if (height > maxDim) {
+            width *= maxDim / height;
+            height = maxDim;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          selectedImageBase64 = canvas.toDataURL('image/jpeg', 0.7);
+          document.getElementById('modalImgPreview').src = selectedImageBase64;
+          document.getElementById('mediaModal').classList.remove('hidden');
+        };
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function closeModal() {
+      document.getElementById('mediaModal').classList.add('hidden');
+      document.getElementById('fileInput').value = '';
+      selectedImageBase64 = null;
+    }
+
+    async function confirmMediaUpload() {
+      const caption = document.getElementById('modalCaption').value;
+      const folderId = document.getElementById('assetSelect').value;
+      const imgData = selectedImageBase64;
+      const mime = selectedImageMime;
+
+      closeModal();
+      document.getElementById('modalCaption').value = '';
+
+      const msgId = appendMessage({ text: caption, img: imgData, isUser: true, status: '🕒' });
+      saveChatHistory();
+
+      try {
+        updateProgress(msgId, 40, '✓');
+        const res = await fetch(GAS_WEB_APP_URL, {
+          method: 'POST',
+          body: JSON.stringify({
+            action: 'processChat',
+            prompt: caption,
+            folderId: folderId,
+            imageBase64: imgData,
+            mimeType: mime
+          })
+        });
+
+        updateProgress(msgId, 100, '✓✓');
+        const result = await res.json();
+
+        if (result.status === 'success') {
+          appendMessage({ text: result.data.reply, isUser: false });
+        } else {
+          appendMessage({ text: 'Error: ' + result.message, isUser: false });
         }
+      } catch (e) {
+        appendMessage({ text: 'Network Error: ' + e.message, isUser: false });
+      }
+      saveChatHistory();
+    }
 
-        async function fetchFolders() {
-            try {
-                let response = await fetch(WEB_APP_URL, {
-                    method: "POST",
-                    headers: { "Content-Type": "text/plain;charset=utf-8" },
-                    body: JSON.stringify({ action: "getFolders" })
-                });
-                let result = await response.json();
-                if (result.success && result.folders) {
-                    let dropdown = document.getElementById("assetDropdown");
-                    result.folders.forEach(folder => {
-                        let option = document.createElement("option");
-                        option.value = folder;
-                        option.text = folder;
-                        dropdown.add(option);
-                    });
-                }
-            } catch (err) {
-                console.error("Error fetching folders:", err);
-            }
+    async function sendTextMessage() {
+      const input = document.getElementById('messageInput');
+      const text = input.value.trim();
+      if (!text) return;
+
+      input.value = '';
+      appendMessage({ text: text, isUser: true, status: '✓✓' });
+      saveChatHistory();
+
+      try {
+        const res = await fetch(GAS_WEB_APP_URL, {
+          method: 'POST',
+          body: JSON.stringify({
+            action: 'processChat',
+            prompt: text
+          })
+        });
+        const result = await res.json();
+        if (result.status === 'success') {
+          appendMessage({ text: result.data.reply, isUser: false });
+        } else {
+          appendMessage({ text: 'Error: ' + result.message, isUser: false });
         }
+      } catch (e) {
+        appendMessage({ text: 'Network Error: ' + e.message, isUser: false });
+      }
+      saveChatHistory();
+    }
 
-        function checkAssetAndTriggerUpload() {
-            if (!selectedAsset) {
-                alert("Pehle upar se Asset select karein ya naya banayein!");
-                return;
-            }
-            document.getElementById('fileInput').click();
-        }
+    function appendMessage({ text, img, isUser, status }) {
+      const stream = document.getElementById('chatStream');
+      const msgId = 'msg-' + Date.now();
+      
+      const align = isUser ? 'justify-end' : 'justify-start';
+      const bubbleClass = isUser ? 'bubble-out' : 'bubble-in';
 
-        function handleImageSelection(event) {
-            const files = event.target.files;
-            if (!files || files.length === 0) return;
+      let contentHtml = '';
+      if (img) {
+        contentHtml += `<img src="${img}" class="rounded mb-2 max-h-48 w-full object-cover">`;
+      }
+      
+      contentHtml += `<div class="text-sm text-gray-800 break-words">${text}</div>`;
 
-            currentFile = files[0];
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                currentBase64 = e.target.result.split(',')[1];
-                document.getElementById("modalImagePreview").src = e.target.result;
-                document.getElementById("modalCaptionInput").value = "";
-                document.getElementById("mediaModal").classList.remove("hidden");
-            };
-            reader.readAsDataURL(currentFile);
-            event.target.value = "";
-        }
+      if (!isUser && text.includes('<table')) {
+        contentHtml += `
+          <div class="mt-2 flex space-x-2">
+            <button onclick="copyTableData(this)" class="bg-gray-100 hover:bg-gray-200 text-xs px-2 py-1 rounded border">📋 Copy</button>
+            <button onclick="exportCSV(this)" class="bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-xs px-2 py-1 rounded border">📥 CSV</button>
+          </div>
+        `;
+      }
 
-        function closeModal() {
-            document.getElementById("mediaModal").classList.add("hidden");
-            currentFile = null;
-            currentBase64 = null;
-        }
+      const msgNode = document.createElement('div');
+      msgNode.className = `flex ${align}`;
+      msgNode.id = msgId;
+      msgNode.innerHTML = `
+        <div class="max-w-[80%] rounded-lg p-2.5 shadow ${bubbleClass} relative">
+          ${contentHtml}
+          <div class="flex items-center justify-end space-x-1 mt-1 text-[10px] text-gray-500">
+            <span>${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+            ${isUser ? `<span class="status-icon">${status || '✓'}</span>` : ''}
+          </div>
+        </div>
+      `;
 
-        async function sendSelectedImage() {
-            if (!currentFile || !currentBase64) return;
+      stream.appendChild(msgNode);
+      stream.scrollTop = stream.scrollHeight;
+      return msgId;
+    }
 
-            let captionText = document.getElementById("modalCaptionInput").value.trim();
-            const fullDataUrl = document.getElementById("modalImagePreview").src;
-            closeModal();
+    function updateProgress(msgId, percent, statusSymbol) {
+      const msg = document.getElementById(msgId);
+      if (!msg) return;
+      const statusIcon = msg.querySelector('.status-icon');
+      if (statusIcon) statusIcon.innerText = statusSymbol;
+    }
 
-            const msgId = "msg_" + Date.now();
-            appendMediaMessageWithProgress(fullDataUrl, captionText, msgId, 'user');
+    function copyTableData(btn) {
+      const table = btn.closest('.bubble-in').querySelector('table');
+      if (table) {
+        navigator.clipboard.writeText(table.innerText);
+        alert('Table data copied!');
+      }
+    }
 
-            await uploadToDriveWithProgress(currentFile, selectedAsset, msgId, captionText);
-        }
+    function exportCSV(btn) {
+      const table = btn.closest('.bubble-in').querySelector('table');
+      if (!table) return;
+      let csv = [];
+      const rows = table.querySelectorAll('tr');
+      for (let row of rows) {
+        const cols = row.querySelectorAll('td, th');
+        let rowData = [];
+        for (let col of cols) rowData.push('"' + col.innerText.replace(/"/g, '""') + '"');
+        csv.push(rowData.join(','));
+      }
+      const blob = new Blob([csv.join('\n')], { type: 'text/csv' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `Logsheet_Data_${Date.now()}.csv`;
+      a.click();
+    }
 
-        async function uploadToDriveWithProgress(file, assetCode, msgId, captionText) {
-            let progressBar = document.getElementById(`progress_${msgId}`);
-            let progressText = document.getElementById(`progresstext_${msgId}`);
-            let statusIcon = document.getElementById(`status_${msgId}`);
+    function saveChatHistory() {
+      const stream = document.getElementById('chatStream');
+      localStorage.setItem('chat_history', stream.innerHTML);
+    }
 
-            let progress = 10;
-            let interval = setInterval(() => {
-                if (progress < 90) {
-                    progress += 20;
-                    if (progressBar) progressBar.style.width = progress + "%";
-                    if (progressText) progressText.innerText = progress + "%";
-                }
-            }, 100);
-
-            let payload = {
-                action: "upload",
-                assetCode: assetCode,
-                fileName: file.name,
-                mimeType: file.type,
-                base64Data: currentBase64
-            };
-
-            try {
-                let response = await fetch(WEB_APP_URL, {
-                    method: "POST",
-                    headers: { "Content-Type": "text/plain;charset=utf-8" },
-                    body: JSON.stringify(payload)
-                });
-                let result = await response.json();
-
-                clearInterval(interval);
-                if (progressBar) progressBar.style.width = "100%";
-                if (progressText) progressText.innerText = "100%";
-
-                setTimeout(() => {
-                    let progressContainer = document.getElementById(`progress_container_${msgId}`);
-                    if (progressContainer) progressContainer.style.display = 'none';
-                    if (statusIcon) statusIcon.innerHTML = " ✓✓";
-                }, 300);
-
-                if (result.success) {
-                    triggerGeminiVisionAnalysis(currentBase64, file.type, captionText || "Analyze image and convert to table.");
-                } else {
-                    appendMessage("Upload failed: " + result.error, 'text', 'bot');
-                }
-            } catch (err) {
-                clearInterval(interval);
-                appendMessage("Upload Exception: " + err.toString(), 'text', 'bot');
-            }
-        }
-
-        async function triggerGeminiVisionAnalysis(base64Img, mime, queryText) {
-            try {
-                let payload = {
-                    action: "geminiChat",
-                    message: queryText,
-                    base64Image: base64Img,
-                    mimeType: mime
-                };
-
-                let response = await fetch(WEB_APP_URL, {
-                    method: "POST",
-                    headers: { "Content-Type": "text/plain;charset=utf-8" },
-                    body: JSON.stringify(payload)
-                });
-
-                let textResponse = await response.text();
-                let result;
-                try {
-                    result = JSON.parse(textResponse);
-                } catch (parseErr) {
-                    appendMessage("Server Response Error: " + textResponse, 'text', 'bot');
-                    return;
-                }
-
-                if (result.success) {
-                    let formattedReply = formatGeminiOutput(result.reply);
-                    appendMessage(formattedReply, 'html', 'bot');
-                } else {
-                    appendMessage("AI Error: " + result.error, 'text', 'bot');
-                }
-            } catch (err) {
-                appendMessage("Network Exception: " + err.toString(), 'text', 'bot');
-            }
-        }
-
-        function handleKeyPress(event) {
-            if (event.key === 'Enter') {
-                sendMessage();
-            }
-        }
-
-        async function sendMessage() {
-            const input = document.getElementById("userInput");
-            const query = input.value.trim();
-            if (!query) return;
-
-            appendMessage(query, 'text', 'user');
-            input.value = "";
-
-            try {
-                let payload = {
-                    action: "geminiChat",
-                    message: query
-                };
-
-                let response = await fetch(WEB_APP_URL, {
-                    method: "POST",
-                    headers: { "Content-Type": "text/plain;charset=utf-8" },
-                    body: JSON.stringify(payload)
-                });
-
-                let textResponse = await response.text();
-                let result;
-                try {
-                    result = JSON.parse(textResponse);
-                } catch (parseErr) {
-                    appendMessage("Server Response Error: " + textResponse, 'text', 'bot');
-                    return;
-                }
-
-                if (result.success) {
-                    let formattedReply = formatGeminiOutput(result.reply);
-                    appendMessage(formattedReply, 'html', 'bot');
-                } else {
-                    appendMessage("AI Error: " + result.error, 'text', 'bot');
-                }
-            } catch (err) {
-                appendMessage("Network Exception: " + err.toString(), 'text', 'bot');
-            }
-        }
-
-        function formatGeminiOutput(text) {
-            let htmlContent = text.replace(/\n/g, '<br>');
-            return `<div class="text-xs space-y-2">${htmlContent}</div>
-            <div class="flex space-x-2 mt-2 pt-2 border-t border-gray-200">
-                <button onclick="copyReplyText(this)" class="bg-gray-200 hover:bg-gray-300 text-black px-2 py-1 rounded text-xs font-semibold">📋 Copy Text</button>
-                <button onclick="shareReplyText(this)" class="bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded text-xs font-semibold">📤 Share</button>
-            </div>`;
-        }
-
-        function copyReplyText(btn) {
-            let container = btn.parentElement.previousElementSibling;
-            navigator.clipboard.writeText(container.innerText).then(() => {
-                alert("Text copied to clipboard!");
-            });
-        }
-
-        function shareReplyText(btn) {
-            let container = btn.parentElement.previousElementSibling;
-            let text = container.innerText;
-            if (navigator.share) {
-                navigator.share({ title: 'AI Response', text: text }).catch(err => console.log(err));
-            } else {
-                window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
-            }
-        }
-
-        function appendMediaMessageWithProgress(imgSrc, caption, msgId, sender) {
-            const container = document.getElementById("chatContainer");
-            const msgDiv = document.createElement("div");
-            msgDiv.className = `flex ${sender === 'user' ? 'justify-end' : 'justify-start'}`;
-
-            const innerDiv = document.createElement("div");
-            innerDiv.className = `p-2 rounded-lg shadow max-w-xs sm:max-w-md text-sm ${sender === 'user' ? 'bg-[#d9fdd3] text-black' : 'bg-white text-black'}`;
-
-            let captionHtml = caption ? `<p class="mt-1 px-1 text-xs">${caption}</p>` : '';
-
-            innerDiv.innerHTML = `
-                <div class="relative rounded overflow-hidden">
-                    <img src="${imgSrc}" class="rounded max-h-48 object-cover w-full">
-                    <div id="progress_container_${msgId}" class="absolute inset-0 bg-black/50 flex flex-col items-center justify-center text-white">
-                        <div class="w-3/4 bg-gray-300 rounded-full h-2 mb-1 overflow-hidden">
-                            <div id="progress_${msgId}" class="bg-green-500 h-full w-[10%] transition-all duration-200"></div>
-                        </div>
-                        <span id="progresstext_${msgId}" class="text-xs font-bold">10%</span>
-                    </div>
-                </div>
-                ${captionHtml}
-                <div class="text-right text-[10px] text-gray-500 mt-1"><span id="status_${msgId}">🕒</span></div>
-            `;
-
-            msgDiv.appendChild(innerDiv);
-            container.appendChild(msgDiv);
-            container.scrollTop = container.scrollHeight;
-        }
-
-        function appendMessage(content, type, sender) {
-            const container = document.getElementById("chatContainer");
-            const msgDiv = document.createElement("div");
-            msgDiv.className = `flex ${sender === 'user' ? 'justify-end' : 'justify-start'}`;
-
-            const innerDiv = document.createElement("div");
-            innerDiv.className = `p-3 rounded-lg shadow max-w-xs sm:max-w-md text-sm ${sender === 'user' ? 'bg-[#d9fdd3] text-black' : 'bg-white text-black'}`;
-
-            if (type === 'html') {
-                innerDiv.innerHTML = content;
-            } else {
-                innerDiv.innerText = content;
-            }
-
-            msgDiv.appendChild(innerDiv);
-            container.appendChild(msgDiv);
-            container.scrollTop = container.scrollHeight;
-        }
-    </script>
+    function loadChatHistory() {
+      const saved = localStorage.getItem('chat_history');
+      if (saved) {
+        document.getElementById('chatStream').innerHTML = saved;
+      }
+    }
+  </script>
 </body>
 </html>
