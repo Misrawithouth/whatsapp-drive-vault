@@ -104,6 +104,7 @@
             try {
                 let response = await fetch(WEB_APP_URL, {
                     method: "POST",
+                    headers: { "Content-Type": "text/plain;charset=utf-8" },
                     body: JSON.stringify({ action: "getFolders" })
                 });
                 let result = await response.json();
@@ -189,6 +190,7 @@
             try {
                 let response = await fetch(WEB_APP_URL, {
                     method: "POST",
+                    headers: { "Content-Type": "text/plain;charset=utf-8" },
                     body: JSON.stringify(payload)
                 });
                 let result = await response.json();
@@ -206,11 +208,11 @@
                 if (result.success) {
                     triggerGeminiVisionAnalysis(currentBase64, file.type, captionText || "Please analyze this image.");
                 } else {
-                    alert("Upload failed: " + result.error);
+                    appendMessage("Upload failed: " + result.error, 'text', 'bot');
                 }
             } catch (err) {
                 clearInterval(interval);
-                alert("Upload Exception: " + err.toString());
+                appendMessage("Upload Exception: " + err.toString(), 'text', 'bot');
             }
         }
 
@@ -225,16 +227,24 @@
 
                 let response = await fetch(WEB_APP_URL, {
                     method: "POST",
+                    headers: { "Content-Type": "text/plain;charset=utf-8" },
                     body: JSON.stringify(payload)
                 });
 
-                let result = await response.json();
+                let textResponse = await response.text();
+                let result;
+                try {
+                    result = JSON.parse(textResponse);
+                } catch (parseErr) {
+                    appendMessage("Server Response Error: " + textResponse, 'text', 'bot');
+                    return;
+                }
 
                 if (result.success) {
                     let formattedReply = formatGeminiOutput(result.reply);
                     appendMessage(formattedReply, 'html', 'bot');
                 } else {
-                    appendMessage("Error: " + result.error, 'text', 'bot');
+                    appendMessage("AI Error: " + result.error, 'text', 'bot');
                 }
             } catch (err) {
                 appendMessage("Network Exception: " + err.toString(), 'text', 'bot');
@@ -263,16 +273,24 @@
 
                 let response = await fetch(WEB_APP_URL, {
                     method: "POST",
+                    headers: { "Content-Type": "text/plain;charset=utf-8" },
                     body: JSON.stringify(payload)
                 });
 
-                let result = await response.json();
+                let textResponse = await response.text();
+                let result;
+                try {
+                    result = JSON.parse(textResponse);
+                } catch (parseErr) {
+                    appendMessage("Server Response Error: " + textResponse, 'text', 'bot');
+                    return;
+                }
 
                 if (result.success) {
                     let formattedReply = formatGeminiOutput(result.reply);
                     appendMessage(formattedReply, 'html', 'bot');
                 } else {
-                    appendMessage("Error: " + result.error, 'text', 'bot');
+                    appendMessage("AI Error: " + result.error, 'text', 'bot');
                 }
             } catch (err) {
                 appendMessage("Network Exception: " + err.toString(), 'text', 'bot');
@@ -288,7 +306,7 @@
             </div>`;
         }
 
-        function copyReplyText(btn) {
+        function copyReplyTest(btn) {
             let container = btn.parentElement.previousElementSibling;
             navigator.clipboard.writeText(container.innerText).then(() => {
                 alert("Text copied to clipboard!");
