@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Data Collection & AI</title>
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
@@ -206,7 +205,7 @@
                 }, 300);
 
                 if (result.success) {
-                    triggerGeminiVisionAnalysis(currentBase64, file.type, captionText || "Please analyze this image.");
+                    triggerGeminiVisionAnalysis(currentBase64, file.type, captionText || "Analyze image and convert to table.");
                 } else {
                     appendMessage("Upload failed: " + result.error, 'text', 'bot');
                 }
@@ -306,7 +305,7 @@
             </div>`;
         }
 
-        function copyReplyTest(btn) {
+        function copyReplyText(btn) {
             let container = btn.parentElement.previousElementSibling;
             navigator.clipboard.writeText(container.innerText).then(() => {
                 alert("Text copied to clipboard!");
