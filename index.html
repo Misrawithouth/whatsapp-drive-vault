@@ -59,7 +59,7 @@
         </div>
       </div>
 
-      <!-- ASSET SELECTOR & CLEAR HISTORY -->
+      <!-- ASSET SELECTOR & ACTIONS -->
       <div class="flex items-center space-x-2">
         <select id="assetSelect" class="bg-[#128c7e] text-white text-xs rounded px-2 py-1.5 focus:outline-none border border-emerald-600 max-w-[110px]">
           <option value="">Select Asset...</option>
@@ -67,7 +67,7 @@
         <button onclick="createNewAssetFolder()" title="New Asset" class="bg-[#25d366] hover:bg-green-600 text-white rounded-full w-7 h-7 flex items-center justify-center shadow">
           <i class="fa-solid fa-plus text-xs"></i>
         </button>
-        <button onclick="clearChatHistory()" title="Clear Chat History" class="bg-red-500 hover:bg-red-600 text-white rounded-full w-7 h-7 flex items-center justify-center shadow">
+        <button onclick="clearChatHistory()" title="Clear Chat" class="bg-red-500 hover:bg-red-600 text-white rounded-full w-7 h-7 flex items-center justify-center shadow">
           <i class="fa-solid fa-trash-can text-xs"></i>
         </button>
       </div>
@@ -122,7 +122,10 @@
   </div>
 
   <script>
-    const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxOk2IuD_9YmJVzB7QV-8eMLr1V3ncgRvdjfXybSTB1rrPMH59tIHejRGEQ00B0R5AHZg/exec";
+    // ==========================================
+    // UPDATED GAS WEB APP URL:
+    // ==========================================
+    const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyVD8bxQkjtiblye1DERkVW8FYt8Il2rFSeJPcTvwWitlrg8Zf_tXazM7rp0Kdm3E9UNw/exec";
 
     let selectedImageBase64 = null;
     let selectedImageMime = null;
@@ -403,12 +406,12 @@
     }
 
     function clearChatHistory() {
-      if (confirm('Kya aap saare purane messages clear karna chahte hain?')) {
+      if (confirm('Kya aap saare purane messages aur network errors clear karna chahte hain?')) {
         localStorage.removeItem('chat_history');
         document.getElementById('chatStream').innerHTML = `
           <div class="flex justify-start">
             <div class="max-w-[85%] rounded-lg p-2.5 shadow bubble-in">
-              <div class="text-sm text-gray-800">Chat history cleared! Main aapka AI assistant hoon. Bataiaye kaise help karu?</div>
+              <div class="text-sm text-gray-800">Chat history cleared! Main aapka AI assistant hoon. Bataiye kaise help karu?</div>
               <div class="text-[10px] text-gray-400 text-right mt-1">System</div>
             </div>
           </div>
