@@ -38,6 +38,32 @@
     }
     .typing-dot:nth-child(1) { animation-delay: -0.32s; }
     .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+
+    /* HTML Table Custom Styling */
+    .app-table {
+      width: 100%;
+      font-size: 12px;
+      border-collapse: collapse;
+      margin: 8px 0;
+      background: white;
+      border-radius: 6px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .app-table th {
+      background-color: #075e54;
+      color: white;
+      padding: 6px 8px;
+      text-align: left;
+    }
+    .app-table td {
+      border: 1px solid #e2e8f0;
+      padding: 6px 8px;
+      color: #1e293b;
+    }
+    .app-table tr:nth-child(even) {
+      background-color: #f8fafc;
+    }
   </style>
 </head>
 <body class="bg-gray-100 font-sans">
@@ -77,7 +103,7 @@
     <main id="chatStream" class="flex-1 overflow-y-auto p-4 chat-bg space-y-3 pb-20">
       <div class="flex justify-start">
         <div class="max-w-[85%] rounded-lg p-2.5 shadow bubble-in">
-          <div class="text-sm text-gray-800">Haan ji! Main aapka AI assistant hoon. Koi bhi document ya logsheet photo bhejiye, main help karunga.</div>
+          <div class="text-sm text-gray-800">Namaste! Main aapka AI assistant hoon. Koi bhi document ya logsheet photo bhejiye, main professional format me help karunga.</div>
           <div class="text-[10px] text-gray-400 text-right mt-1">System</div>
         </div>
       </div>
@@ -126,7 +152,7 @@
 
     let selectedImageBase64 = null;
     let selectedImageMime = null;
-    let conversationMemory = []; // Stores recent context for AI memory
+    let conversationMemory = [];
 
     window.addEventListener('DOMContentLoaded', () => {
       loadChatHistory();
@@ -232,7 +258,6 @@
       const msgId = appendMessage({ text: caption, img: imgData, isUser: true, status: '🕒' });
       saveChatHistory();
 
-      // Push to memory
       conversationMemory.push({ role: 'user', text: `[Uploaded Image] ${caption}` });
       if (conversationMemory.length > 10) conversationMemory.shift();
 
@@ -332,6 +357,46 @@
       if (el) el.remove();
     }
 
+    // Convert Markdown & Pipes to clean HTML elements
+    function formatTextToHTML(inputText) {
+      let text = inputText;
+
+      // Convert **bold** to <b>bold</b>
+      text = text.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+
+      // Convert Markdown Tables (| header |) to HTML <table>
+      if (text.includes('|') && text.includes('-|-')) {
+        const lines = text.split('\n');
+        let tableHtml = '<table class="app-table">';
+        let inTable = false;
+
+        for (let line of lines) {
+          line = line.trim();
+          if (line.startsWith('|') && line.endsWith('|')) {
+            if (line.includes('---') || line.includes(':-')) continue; // Skip divider row
+            
+            const cols = line.split('|').filter((c, idx, arr) => idx > 0 && idx < arr.length - 1);
+            if (!inTable) {
+              tableHtml += '<thead><tr>' + cols.map(c => `<th>${c.trim()}</th>`).join('') + '</tr></thead><tbody>';
+              inTable = true;
+            } else {
+              tableHtml += '<tr>' + cols.map(c => `<td>${c.trim()}</td>`).join('') + '</tr>';
+            }
+          } else {
+            if (inTable) {
+              tableHtml += '</tbody></table>';
+              inTable = false;
+            }
+            tableHtml += line + '<br>';
+          }
+        }
+        if (inTable) tableHtml += '</tbody></table>';
+        return tableHtml;
+      }
+
+      return text.replace(/\n/g, '<br>');
+    }
+
     function appendMessage({ text, img, isUser, status }) {
       const stream = document.getElementById('chatStream');
       const msgId = 'msg-' + Date.now();
@@ -344,13 +409,14 @@
         contentHtml += `<img src="${img}" class="rounded mb-2 max-h-48 w-full object-cover">`;
       }
       
-      contentHtml += `<div class="text-sm text-gray-800 break-words whitespace-pre-wrap">${text}</div>`;
+      const formattedText = isUser ? text : formatTextToHTML(text);
+      contentHtml += `<div class="text-sm text-gray-800 break-words">${formattedText}</div>`;
 
-      if (!isUser && text.includes('<table')) {
+      if (!isUser && (formattedText.includes('<table') || text.includes('|'))) {
         contentHtml += `
           <div class="mt-2 flex space-x-2">
-            <button onclick="copyTableData(this)" class="bg-gray-100 hover:bg-gray-200 text-xs px-2 py-1 rounded border">📋 Copy</button>
-            <button onclick="exportCSV(this)" class="bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-xs px-2 py-1 rounded border">📥 CSV</button>
+            <button onclick="copyTableData(this)" class="bg-gray-100 hover:bg-gray-200 text-xs px-2 py-1 rounded border shadow-sm">📋 Copy</button>
+            <button onclick="exportCSV(this)" class="bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-xs px-2 py-1 rounded border shadow-sm">📥 CSV</button>
           </div>
         `;
       }
@@ -424,7 +490,7 @@
     }
 
     function clearChatHistory() {
-      if (confirm('Kya aap saare purane messages clear karna chahte hain?')) {
+      if (confirm('Kya aap saare purane messages aur unrendered markdown clear karna chahte hain?')) {
         localStorage.removeItem('chat_history');
         localStorage.removeItem('chat_memory');
         conversationMemory = [];
