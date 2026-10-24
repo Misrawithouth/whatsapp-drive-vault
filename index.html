@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Data Collection PWA</title>
+  <title>Data Collection Vault</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#075E54">
   <script src="https://cdn.tailwindcss.com"></script>
@@ -18,11 +18,27 @@
     }
     .chat-bg {
       background-color: #efeae2;
-      background-image: radial-gradient(#d1c7bd 1px, transparent 0);
-      background-size: 16px 16px;
+      background-image: radial-gradient(#cbd5e1 1.2px, transparent 1.2px);
+      background-size: 20px 20px;
     }
     .bubble-out { background-color: #dcf8c6; }
     .bubble-in { background-color: #ffffff; }
+
+    /* Typing Jumping Dots Animation */
+    @keyframes bounce {
+      0%, 80%, 100% { transform: scale(0); }
+      40% { transform: scale(1.0); }
+    }
+    .typing-dot {
+      display: inline-block;
+      width: 7px;
+      height: 7px;
+      background-color: #8696a0;
+      border-radius: 50%;
+      animation: bounce 1.4s infinite ease-in-out both;
+    }
+    .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+    .typing-dot:nth-child(2) { animation-delay: -0.16s; }
   </style>
 </head>
 <body class="bg-gray-100 font-sans">
@@ -30,21 +46,24 @@
   <div class="flex flex-col h-screen w-screen overflow-hidden relative">
 
     <!-- TOP HEADER -->
-    <header class="bg-[#075e54] text-white px-4 py-3 flex items-center justify-between shadow-md z-20 shrink-0">
+    <header class="bg-[#075e54] text-white px-3 py-2.5 flex items-center justify-between shadow-md z-20 shrink-0">
       <div class="flex items-center space-x-3">
-        <div class="w-10 h-10 rounded-full bg-emerald-700 flex items-center justify-center font-bold text-lg">
-          <i class="fa-solid fa-robot"></i>
+        <div class="relative">
+          <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center font-bold text-white shadow-inner border border-emerald-400">
+            <i class="fa-solid fa-database text-sm"></i>
+          </div>
+          <span class="absolute bottom-0 right-0 w-3 h-3 bg-green-400 border-2 border-[#075e54] rounded-full"></span>
         </div>
         <div>
-          <h1 class="font-bold text-base leading-tight">Data Collection Vault</h1>
-          <p class="text-xs text-emerald-200" id="status-indicator">Connected to GAS Backend</p>
+          <h1 class="font-bold text-sm leading-tight tracking-wide">Data Collection Vault</h1>
+          <p class="text-[11px] text-emerald-100 font-medium">Online</p>
         </div>
       </div>
 
       <!-- ASSET SELECTOR DROPDOWN -->
       <div class="flex items-center space-x-2">
-        <select id="assetSelect" class="bg-[#128c7e] text-white text-xs rounded px-2 py-1.5 focus:outline-none border border-emerald-600 max-w-[130px]">
-          <option value="">Loading Assets...</option>
+        <select id="assetSelect" class="bg-[#128c7e] text-white text-xs rounded px-2 py-1.5 focus:outline-none border border-emerald-600 max-w-[120px]">
+          <option value="">Select Asset...</option>
         </select>
         <button onclick="createNewAssetFolder()" class="bg-[#25d366] hover:bg-green-600 text-white rounded-full w-7 h-7 flex items-center justify-center shadow">
           <i class="fa-solid fa-plus text-xs"></i>
@@ -52,28 +71,28 @@
       </div>
     </header>
 
-    <!-- CHAT MESSAGES AREA (PADDING AT BOTTOM FOR FIXED FOOTER) -->
+    <!-- CHAT MESSAGES AREA -->
     <main id="chatStream" class="flex-1 overflow-y-auto p-4 chat-bg space-y-3 pb-20">
       <div class="flex justify-start">
-        <div class="max-w-[80%] rounded-lg p-2.5 shadow bubble-in">
-          <div class="text-sm text-gray-800">Hello! Image attach karke ya text message bhej kar processing start karein.</div>
-          <div class="text-[10px] text-gray-500 text-right mt-1">System</div>
+        <div class="max-w-[85%] rounded-lg p-2.5 shadow bubble-in">
+          <div class="text-sm text-gray-800">Namaste! Main aapka AI assistant hoon. Koi bhi logsheet photo ya text message bhejiye, main turant help karunga.</div>
+          <div class="text-[10px] text-gray-400 text-right mt-1">Just now</div>
         </div>
       </div>
     </main>
 
     <!-- BOTTOM FIXED INPUT BAR -->
-    <footer class="fixed bottom-0 left-0 right-0 bg-gray-200 p-2 flex items-center space-x-2 border-t border-gray-300 z-30">
-      <button onclick="document.getElementById('fileInput').click()" class="text-gray-600 hover:text-emerald-700 p-2 text-xl flex items-center justify-center">
+    <footer class="fixed bottom-0 left-0 right-0 bg-[#f0f2f5] p-2 flex items-center space-x-2 border-t border-gray-300 z-30">
+      <button onclick="document.getElementById('fileInput').click()" class="text-gray-500 hover:text-emerald-700 p-2 text-xl flex items-center justify-center">
         <i class="fa-solid fa-paperclip"></i>
       </button>
       <input type="file" id="fileInput" accept="image/*" class="hidden" onchange="handleFileSelect(event)">
       
-      <input type="text" id="messageInput" placeholder="Type a message or asset query..." 
-             class="flex-1 bg-white rounded-full px-4 py-2 text-sm focus:outline-none shadow-inner border border-gray-300"
+      <input type="text" id="messageInput" placeholder="Type a message..." 
+             class="flex-1 bg-white rounded-full px-4 py-2 text-sm focus:outline-none shadow-sm border border-gray-300 text-gray-800"
              onkeypress="if(event.key === 'Enter') sendTextMessage()">
 
-      <button onclick="sendTextMessage()" class="bg-[#128c7e] hover:bg-[#075e54] text-white rounded-full w-10 h-10 flex items-center justify-center shadow shrink-0">
+      <button onclick="sendTextMessage()" class="bg-[#00a884] hover:bg-[#008f72] text-white rounded-full w-10 h-10 flex items-center justify-center shadow shrink-0">
         <i class="fa-solid fa-paper-plane text-sm"></i>
       </button>
     </footer>
@@ -207,6 +226,9 @@
       const msgId = appendMessage({ text: caption, img: imgData, isUser: true, status: '🕒' });
       saveChatHistory();
 
+      // Show Typing Indicator
+      const typingId = showTypingIndicator();
+
       try {
         updateProgress(msgId, 40, '✓');
         const res = await fetch(GAS_WEB_APP_URL, {
@@ -222,6 +244,7 @@
 
         updateProgress(msgId, 100, '✓✓');
         const result = await res.json();
+        removeTypingIndicator(typingId);
 
         if (result.status === 'success') {
           appendMessage({ text: result.data.reply, isUser: false });
@@ -229,6 +252,7 @@
           appendMessage({ text: 'Error: ' + result.message, isUser: false });
         }
       } catch (e) {
+        removeTypingIndicator(typingId);
         appendMessage({ text: 'Network Error: ' + e.message, isUser: false });
       }
       saveChatHistory();
@@ -243,6 +267,9 @@
       appendMessage({ text: text, isUser: true, status: '✓✓' });
       saveChatHistory();
 
+      // Show Typing Indicator
+      const typingId = showTypingIndicator();
+
       try {
         const res = await fetch(GAS_WEB_APP_URL, {
           method: 'POST',
@@ -252,15 +279,41 @@
           })
         });
         const result = await res.json();
+        removeTypingIndicator(typingId);
+
         if (result.status === 'success') {
           appendMessage({ text: result.data.reply, isUser: false });
         } else {
           appendMessage({ text: 'Error: ' + result.message, isUser: false });
         }
       } catch (e) {
+        removeTypingIndicator(typingId);
         appendMessage({ text: 'Network Error: ' + e.message, isUser: false });
       }
       saveChatHistory();
+    }
+
+    function showTypingIndicator() {
+      const stream = document.getElementById('chatStream');
+      const typingId = 'typing-' + Date.now();
+      const node = document.createElement('div');
+      node.className = 'flex justify-start';
+      node.id = typingId;
+      node.innerHTML = `
+        <div class="rounded-lg p-3 shadow bubble-in flex items-center space-x-1.5">
+          <span class="typing-dot"></span>
+          <span class="typing-dot"></span>
+          <span class="typing-dot"></span>
+        </div>
+      `;
+      stream.appendChild(node);
+      stream.scrollTop = stream.scrollHeight;
+      return typingId;
+    }
+
+    function removeTypingIndicator(typingId) {
+      const el = document.getElementById(typingId);
+      if (el) el.remove();
     }
 
     function appendMessage({ text, img, isUser, status }) {
@@ -275,7 +328,7 @@
         contentHtml += `<img src="${img}" class="rounded mb-2 max-h-48 w-full object-cover">`;
       }
       
-      contentHtml += `<div class="text-sm text-gray-800 break-words">${text}</div>`;
+      contentHtml += `<div class="text-sm text-gray-800 break-words whitespace-pre-wrap">${text}</div>`;
 
       if (!isUser && text.includes('<table')) {
         contentHtml += `
@@ -290,9 +343,9 @@
       msgNode.className = `flex ${align}`;
       msgNode.id = msgId;
       msgNode.innerHTML = `
-        <div class="max-w-[80%] rounded-lg p-2.5 shadow ${bubbleClass} relative">
+        <div class="max-w-[85%] rounded-lg p-2.5 shadow ${bubbleClass} relative">
           ${contentHtml}
-          <div class="flex items-center justify-end space-x-1 mt-1 text-[10px] text-gray-500">
+          <div class="flex items-center justify-end space-x-1 mt-1 text-[10px] text-gray-400">
             <span>${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
             ${isUser ? `<span class="status-icon">${status || '✓'}</span>` : ''}
           </div>
