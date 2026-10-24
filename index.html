@@ -59,13 +59,16 @@
         </div>
       </div>
 
-      <!-- ASSET SELECTOR DROPDOWN -->
+      <!-- ASSET SELECTOR & CLEAR HISTORY -->
       <div class="flex items-center space-x-2">
-        <select id="assetSelect" class="bg-[#128c7e] text-white text-xs rounded px-2 py-1.5 focus:outline-none border border-emerald-600 max-w-[120px]">
+        <select id="assetSelect" class="bg-[#128c7e] text-white text-xs rounded px-2 py-1.5 focus:outline-none border border-emerald-600 max-w-[110px]">
           <option value="">Select Asset...</option>
         </select>
-        <button onclick="createNewAssetFolder()" class="bg-[#25d366] hover:bg-green-600 text-white rounded-full w-7 h-7 flex items-center justify-center shadow">
+        <button onclick="createNewAssetFolder()" title="New Asset" class="bg-[#25d366] hover:bg-green-600 text-white rounded-full w-7 h-7 flex items-center justify-center shadow">
           <i class="fa-solid fa-plus text-xs"></i>
+        </button>
+        <button onclick="clearChatHistory()" title="Clear Chat History" class="bg-red-500 hover:bg-red-600 text-white rounded-full w-7 h-7 flex items-center justify-center shadow">
+          <i class="fa-solid fa-trash-can text-xs"></i>
         </button>
       </div>
     </header>
@@ -74,8 +77,8 @@
     <main id="chatStream" class="flex-1 overflow-y-auto p-4 chat-bg space-y-3 pb-20">
       <div class="flex justify-start">
         <div class="max-w-[85%] rounded-lg p-2.5 shadow bubble-in">
-          <div class="text-sm text-gray-800">Namaste! Main aapka AI assistant hoon. Koi bhi logsheet photo ya text message bhejiye, main turant help karunga.</div>
-          <div class="text-[10px] text-gray-400 text-right mt-1">Just now</div>
+          <div class="text-sm text-gray-800">Namaste! Main aapka AI assistant hoon. Koi bhi logsheet photo ya text message bhejiye, main help karunga.</div>
+          <div class="text-[10px] text-gray-400 text-right mt-1">System</div>
         </div>
       </div>
     </main>
@@ -396,6 +399,20 @@
       const saved = localStorage.getItem('chat_history');
       if (saved) {
         document.getElementById('chatStream').innerHTML = saved;
+      }
+    }
+
+    function clearChatHistory() {
+      if (confirm('Kya aap saare purane messages clear karna chahte hain?')) {
+        localStorage.removeItem('chat_history');
+        document.getElementById('chatStream').innerHTML = `
+          <div class="flex justify-start">
+            <div class="max-w-[85%] rounded-lg p-2.5 shadow bubble-in">
+              <div class="text-sm text-gray-800">Chat history cleared! Main aapka AI assistant hoon. Bataiaye kaise help karu?</div>
+              <div class="text-[10px] text-gray-400 text-right mt-1">System</div>
+            </div>
+          </div>
+        `;
       }
     }
   </script>
